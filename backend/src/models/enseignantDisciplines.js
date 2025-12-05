@@ -24,8 +24,22 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'enseignants_disciplines',
-    timestamps: true
+    timestamps: true,
+    underscored: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
   });
+
+  EnseignantDiscipline.associate = (models) => {
+    EnseignantDiscipline.belongsTo(models.User, {
+      foreignKey: 'teacher_id',
+      as: 'User'
+    });
+    EnseignantDiscipline.belongsTo(models.Discipline, {
+      foreignKey: 'discipline_id',
+      as: 'Discipline'
+    });
+  };
 
   return EnseignantDiscipline;
 };

@@ -79,6 +79,7 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'utilisateurs',
     timestamps: true,
+    underscored: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
     hooks:{
@@ -116,6 +117,10 @@ module.exports = (sequelize) => {
       otherKey: 'discipline_id',
       as: 'disciplines'
     });
+    User.hasMany(models.EnseignantDiscipline, {
+    foreignKey: 'teacher_id',
+    as: 'EnseignantDisciplines'
+  });
   };
 
   return User;

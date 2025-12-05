@@ -18,9 +18,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 1
     },
+    discipline_id: DataTypes.INTEGER, // ✅ AJOUT
     sa_number: DataTypes.STRING(50),
     sa_name: DataTypes.STRING(255),
     activites: DataTypes.TEXT,
+    activites_status: { // ✅ AJOUT 
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: {}
+    },
     contenu: DataTypes.TEXT,
     date_cours: DataTypes.DATEONLY,
     heure_debut: DataTypes.TIME,
@@ -30,17 +36,34 @@ module.exports = (sequelize, DataTypes) => {
     semaine_numero: DataTypes.INTEGER,
     annee_scolaire: DataTypes.STRING(20),
     pourcentage_realise: DataTypes.DECIMAL(5, 2),
+    taux_prevu_programme: DataTypes.DECIMAL(5, 2), // ✅ AJOUT
     modified_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
+    },
+    modified_by: { // ✅ AJOUT
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'user',
+        key: 'id'
+      }
     }
   }, {
     tableName: 'cahier_entries_history',
-    timestamps: false
+    timestamps: false,
+    underscored: true
   });
 
   CahierEntryHistory.associate = (models) => {
-    CahierEntryHistory.belongsTo(models.CahierEntry, { foreignKey: 'cahier_entry_id' });
+    CahierEntryHistory.belongsTo(models.CahierEntry, { 
+      foreignKey: 'cahier_entry_id',
+      as: 'CahierEntry'
+    });
+    CahierEntryHistory.belongsTo(models.User, { 
+      foreignKey: 'modified_by',
+      as: 'ModifiedBy'
+    });
   };
 
   return CahierEntryHistory;

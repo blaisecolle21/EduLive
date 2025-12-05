@@ -1,4 +1,5 @@
 const { Sequelize, DataTypes } = require("sequelize");
+const notificationEnvoiAdmin = require("../models/notificationEnvoiAdmin");
 
 const sequelize = new Sequelize('cahier_texte_platform', 'root','', {
     dialect: 'mariadb',
@@ -21,7 +22,11 @@ const models = {
     Classe: require('../models/classes')(sequelize, DataTypes),
     Discipline: require('../models/disciplines')(sequelize, DataTypes),
     CahierEntry: require('../models/cahier_entries')(sequelize, DataTypes),
-    EnseignantDiscipline: require('../models/enseignantDisciplines')(sequelize, DataTypes) // <-- add this line
+    EnseignantDiscipline: require('../models/enseignantDisciplines')(sequelize, DataTypes),
+    CahierEntryDeleted: require('../models/cahierEntryDeleted')(sequelize, DataTypes),
+    CahierEntryHistory: require('../models/cahierEntryHistory')(sequelize, DataTypes),
+    Notification: require('../models/notification')(sequelize, DataTypes),
+    NotificationEnvoiAdmin: require('../models/notificationEnvoiAdmin')(sequelize, DataTypes)
 }
 
 // Configurer les relations

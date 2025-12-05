@@ -37,7 +37,9 @@ module.exports = (sequelize) => {
       type: DataTypes.TEXT
     },
     activites: {
-      type: DataTypes.TEXT
+      type: DataTypes.JSON,  // Changé de TEXT à JSON
+      allowNull: true,       // Permet null si pas d'activités
+      defaultValue: []       // Valeur par défaut : tableau vide
     },
     taux_prevu: {
       type: DataTypes.DECIMAL(5, 2)
@@ -65,6 +67,10 @@ module.exports = (sequelize) => {
     },
     date_fin: {
       type: DataTypes.DATEONLY
+    },
+    import_batch_id: {
+      type: DataTypes.STRING(36),  // Correspond à VARCHAR(36) pour UUID
+      allowNull: false
     }
   }, {
     tableName: 'programmes_theoriques',
@@ -73,16 +79,24 @@ module.exports = (sequelize) => {
     indexes: [
       {
         fields: ['promotion', 'discipline'],
-        name: 'idx_prom_disc' // Nom court pour l'index non unique
+        name: 'idx_prom_disc' // Index non unique
       },
       {
         fields: ['trimestre', 'semaine_numero'],
-        name: 'idx_trim_sem' // Nom court pour l'index non unique
+        name: 'idx_trim_sem' // Index non unique
       },
       {
         unique: true,
-        fields: ['promotion', 'discipline', 'annee_academique_id', 'trimestre', 'semaine_numero', 'sa'],
-        name: 'uniq_prog_key' // Nom court pour l'index unique (11 caractères)
+        fields: ['promotion', 'discipline', 'annee_academique_id', 'trimestre', 'semaine_numero', 'sa', 'import_batch_id'], // Inclut import_batch_id
+        name: 'uniq_prog_key' // Nom court pour la clé unique
+      },
+      {
+        fields: ['import_batch_id'],
+        name: 'idx_import_batch' // Nouvel index pour import_batch_id
+      },
+      {
+        fields: ['date_debut', 'date_fin'],
+        name: 'idx_dates' // Index pour les dates
       }
     ]
   });

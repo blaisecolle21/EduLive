@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 's_classes',
+        model: 's_classes', // Nom de la table en base
         key: 'id'
       }
     },
@@ -31,21 +31,25 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     tableName: 'disciplines',
     timestamps: true,
-    createdAt: 'created_at', // Mappe createdAt au champ existant created_at
-    updatedAt: 'updated_at' // Mappe updatedAt au champ existant updated_at
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    underscored: true // AJOUTER CETTE LIGNE pour gérer automatiquement les snake_case
   });
 
   Discipline.associate = (models) => {
+    // Utiliser 'Classe' (tel que défini dans database.js)
     Discipline.belongsTo(models.Classe, {
       foreignKey: 'classe_id',
-      as: 'Classe' // Alias défini ici, doit correspondre à l'inclusion
+      as: 'Classe'
     });
+    
     Discipline.belongsToMany(models.User, {
       through: models.EnseignantDiscipline,
       foreignKey: 'discipline_id',
-      otherKey: 'teacher_id'
+      otherKey: 'teacher_id',
+      as: 'Enseignants'
     });
-      // AJOUTE CETTE ASSOCIATION :
+    
     Discipline.hasMany(models.EnseignantDiscipline, {
       foreignKey: 'discipline_id',
       as: 'EnseignantDisciplines'

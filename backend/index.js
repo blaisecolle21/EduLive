@@ -29,7 +29,9 @@ app.use('/api/auth', require('./src/routes/auth'));
 app.use('/api/users', require('./src/routes/users'));
 app.use('/api/programs', require('./src/routes/programs'));
 app.use('/api/cahier', require('./src/routes/cahier'));
-
+app.use('/api/progressionAdmin', require('./src/routes/progressionAdmin'));
+app.use('/api/progression', require('./src/routes/progression')); 
+app.use('/api/notifications', require('./src/routes/notifications'));
 
 async function aunthenticateDb() {
     try{

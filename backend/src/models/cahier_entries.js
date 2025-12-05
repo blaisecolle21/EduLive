@@ -10,18 +10,12 @@ module.exports = (sequelize) => {
     discipline_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'disciplines',
-        key: 'id'
-      }
+      references: { model: 'disciplines', key: 'id' }
     },
     teacher_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'utilisateurs',
-        key: 'id'
-      }
+      references: { model: 'utilisateurs', key: 'id' }
     },
     sa_number: {
       type: DataTypes.STRING(50)
@@ -30,7 +24,13 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING(255)
     },
     activites: {
-      type: DataTypes.TEXT
+      type: DataTypes.TEXT // Sera stocké comme JSON string
+    },
+    // ✅ NOUVEAU: État de progression de chaque activité
+    activites_status: {
+      type: DataTypes.JSON,
+      defaultValue: {},
+      comment: 'Format: { "activite_text": "en_cours" | "fait" }'
     },
     contenu: {
       type: DataTypes.TEXT
@@ -48,7 +48,7 @@ module.exports = (sequelize) => {
       allowNull: false
     },
     duree_minutes: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.VIRTUAL,
       get() {
         const start = this.getDataValue('heure_debut');
         const end = this.getDataValue('heure_fin');
@@ -74,27 +74,56 @@ module.exports = (sequelize) => {
     },
     programme_theorique_id: {
       type: DataTypes.INTEGER,
-      references: {
-        model: 'programmes_theoriques',
-        key: 'id'
+      references: { model: 'programmes_theoriques', key: 'id' }
+    },
+    // ✅ MODIFIÉ: Calcul automatique basé sur activites_status
+    pourcentage_realise: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        const status = this.getDataValue('activites_status') || {};
+        const activites = this.getDataValue('activites');
+        
+        if (!activites) return 0;
+        
+        let activitesList = [];
+        try {
+          activitesList = typeof activites === 'string' ? 
+            activites.split('\n').filter(a => a.trim()) : 
+            activites;
+        } catch (e) {
+          return 0;
+        }
+        
+        if (activitesList.length === 0) return 0;
+        
+        const faites = Object.values(status).filter(s => s === 'fait').length;
+        return Math.round((faites / activitesList.length) * 100);
       }
     },
-    pourcentage_realise: {
+    // ✅ NOUVEAU: Taux prévu du programme théorique
+    taux_prevu_programme: {
       type: DataTypes.DECIMAL(5, 2),
-      defaultValue: 100
+      defaultValue: 0,
+      comment: 'Taux prévu extrait du programme théorique'
     },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+
+     // ✅ NOUVEAUX CHAMPS
+    lots_activites_completes: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: [],
+      comment: 'IDs des lots du programme théorique complètement terminés'
     },
-    updated_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      onUpdate: DataTypes.NOW
+    taux_realise_entry: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+      defaultValue: 0,
+      comment: 'Somme des taux prévus des lots complets dans cette entrée'
     }
   }, {
     tableName: 'cahier_entries',
     timestamps: true,
+    underscored: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at'
   });
