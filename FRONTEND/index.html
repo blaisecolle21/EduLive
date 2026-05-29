@@ -1,15 +1,81 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="/src/style.css" rel="stylesheet">
-    <title>TBook</title>
-  </head>
-  <body>
-    <div id="app">
-      
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- <link href="/src/style.css" rel="stylesheet"> -->
+
+  <title>EduLive - Cahier de texte online</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/LogoEduLive.png" />
+</head>
+
+<header
+  style="background-color:#009688;color:#fff; padding:20px;position:fixed; top:0; left:0; width:100%; z-index:1000;">
+  <nav class="flex items-center justify-between max-w-6xl mx-auto">
+
+    <!-- Logo + Nom  -->
+    <div class="flex items-center">
+      <img src="/LogoEduLive.png" alt="Edulive Logo" class="h-10 mr-2" />
+      <span class="text-white text-[40px] font-bold">EduLive</span>
     </div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+
+    <!-- Bouton hamburger (mobile) -->
+    <button @click="isOpen = !isOpen" class="text-white text-2xl md:hidden focus:outline-none">
+      ☰
+    </button>
+
+    <!-- Menu -->
+    <ul class="hidden md:flex space-x-6 text-white font-medium"
+      :class="{'flex flex-col absolute right-4 top-16 bg-blue-700 p-4 rounded md:hidden': isOpen}">
+      <li><a href="#accueil" class="nav-link hover:text-green-500">Accueil</a></li>
+      <li><a href="#fonctionnalites" class="nav-link hover:text-green-500">Fonctionnalités</a></li>
+      <li><a href="#realisations" class="nav-link hover:text-green-500">Réalisations</a></li>
+    </ul>
+  </nav>
+</header>
+
+<body>
+  <div id="app">
+
+  </div>
+
+
+
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+<!-- 
+<footer id="footer" class="fixed bottom-0 left-0 bg-teal-600 text-white px-5 py-2 
+         transform translate-y-full opacity-0 transition-all duration-500 ml-64">
+  <div class="flex flex-wrap justify-between items-center">
+    <div>© 2026 Edulive. Tous droits réservés.</div>
+    <div>
+      <a href="/mentions-legales" class="mx-2 hover:underline">Mentions légales</a>
+      <a href="/contact" class="mx-2 hover:underline">Contact</a>
+    </div>
+  </div>
+</footer> -->
+
+
+
+
 </html>
+
+
+<!-- <script>
+  window.addEventListener('scroll', () => {
+    const footer = document.getElementById('footer');
+    const scrollPosition = window.scrollY + window.innerHeight;
+    const pageHeight = document.documentElement.scrollHeight;
+
+    if (scrollPosition >= pageHeight - 10) {
+      footer.classList.remove('translate-y-full', 'opacity-0');
+      footer.classList.add('translate-y-0', 'opacity-100');
+    } else {
+      footer.classList.remove('translate-y-0', 'opacity-100');
+      footer.classList.add('translate-y-full', 'opacity-0');
+    }
+  });
+</script> -->

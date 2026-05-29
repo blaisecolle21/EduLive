@@ -51,18 +51,18 @@ export default defineComponent({
         action: () => editor.chain().focus().toggleOrderedList().run(),
         isActive: () => editor.isActive('orderedList')
       },
-      {
-        name: 'heading1',
-        icon: 'H1',
-        action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-        isActive: () => editor.isActive('heading', { level: 1 })
-      },
-      {
-        name: 'paragraph',
-        icon: 'P',
-        action: () => editor.chain().focus().setParagraph().run(),
-        isActive: () => editor.isActive('paragraph')
-      }
+      // {
+      //   name: 'heading1',
+      //   icon: 'H1',
+      //   action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
+      //   isActive: () => editor.isActive('heading', { level: 1 })
+      // },
+      // {
+      //   name: 'paragraph',
+      //   icon: 'P',
+      //   action: () => editor.chain().focus().setParagraph().run(),
+      //   isActive: () => editor.isActive('paragraph')
+      // }
     ];
 
     return { commands };

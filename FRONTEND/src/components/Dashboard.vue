@@ -1,82 +1,241 @@
 <template>
-  <div class="min-h-screen bg-blue-100 p-4">
-    <h1 class="text-3xl font-bold">Tableau de bord</h1>
-    <p v-if="user">Bienvenue, {{ user.prenoms }} {{ user.nom }} ({{ user.role }})</p>
-    <p v-else>Chargement...</p>
+  <div class="min-h-screen relative flex bg-blue-100 overflow-hidden">
 
-    <!-- Navbar pour l'admin -->
-    <div v-if="user && user.role === 'admin'" class="mt-4">
-      <nav class=" text p-2 rounded-md flex justify-center space-x-4 overflow-x-auto">
-        <!-- <button @click="activeSection = 'accueil'" :class="{ 'bg-gray-900 px-4 py-2 rounded': activeSection === 'accueil' }" class="px-4 py-2 rounded hover:bg-gray-100 whitespace-nowrap">Accueil</button> -->
-        <button @click="activeSection = 'users'" :class="{ 'bg-gray-300': activeSection === 'users' }" class="px-4 py-2 rounded hover:bg-gray-300">Gestion des utilisateurs</button>
-        <button @click="activeSection = 'classes'" :class="{ 'bg-gray-300': activeSection === 'classes' }" class="px-4 py-2 rounded hover:bg-gray-300">Gestion des classes</button>
-        <!-- <button @click="activeSection = 'disciplines'" :class="{ 'bg-gray-900': activeSection === 'disciplines' }" class="px-4 py-2 rounded hover:bg-gray-100">Gestion des disciplines</button> -->
-        <button @click="activeSection = 'affectations'" :class="{ 'bg-gray-300': activeSection === 'affectations' }" class="px-4 py-2 rounded hover:bg-gray-300">Gestion des affectations</button>
-        <button @click="activeSection = 'progression'" :class="{ 'bg-gray-300': activeSection === 'progression' }" class="px-4 py-2 rounded hover:bg-gray-300 whitespace-nowrap">Progression Globale</button>
-        <button @click="activeSection = 'consulter-entrees'" :class="{ 'bg-gray-300': activeSection === 'consulter-entrees' }" class="px-4 py-2 rounded hover:bg-gray-300 whitespace-nowrap">Consulter les entrées</button>
-        <!-- <button @click="activeSection = 'import'" :class="{ 'bg-gray-900': activeSection === 'import' }" class="px-4 py-2 rounded hover:bg-gray-100">Importation de PDF</button> -->
-        <button @click="activeSection = 'notifications'" :class="{ 'bg-gray-300': activeSection === 'notifications' }" class="px-4 py-2 rounded hover:bg-gray-300 whitespace-nowrap">Notifications</button>
-      </nav>
+    <!-- Bouton pour ouvrir/fermer la sidebar (mobile uniquement) -->
+    <button
+      @click="showSidebar = !showSidebar"
+      class="md:hidden px-3 py-1 bg-blue-600 text-white rounded mb-4"
+    >
+      {{ showSidebar ? "Fermer Menu" : "Ouvrir Menu" }}
+    </button>
+
+    <!-- Overlay semi-transparent (mobile) -->
+    <div
+      v-if="showSidebar"
+      @click="showSidebar = false"
+      class="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 z-40 md:hidden"
+    ></div>
+
+    <!-- Sidebar -->
+    <aside
+      class="fixed md:fixed top-20 left-0 w-64 bg-white shadow-md h-full transition-transform duration-300 z-50"
+      :class="showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
+    >
+      <!-- Badge utilisateur -->
+      <div class="flex flex-col items-center p-6 border-b animate-fadeIn">
+        <div class="w-16 h-16 rounded-full bg-teal-600 text-white flex items-center justify-center text-2xl font-bold">
+          {{ user.prenoms.charAt(0) }}{{ user.nom.charAt(0) }}
+        </div>
+        <p class="mt-3 font-semibold text-gray-800">{{ user.prenoms }} {{ user.nom }}</p>
+        <p class="text-sm text-gray-500">{{ user.role }}</p>
+      </div>
+
+      <!-- Menu -->
+      <div class="p-4">
+        <h2 class="text-xl font-bold mb-4 animate-fadeIn">Menu Admin</h2>
+        <ul class="space-y-2">
+          <li class="animate-slideUp delay-100">
+            <button @click="activeSection = 'users'"
+                    :class="{ 'bg-teal-600 text-white': activeSection === 'users' }"
+                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
+              Gestion des utilisateurs
+            </button>
+          </li>
+          <li class="animate-slideUp delay-200">
+            <button @click="activeSection = 'classes'"
+                    :class="{ 'bg-teal-600 text-white': activeSection === 'classes' }"
+                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
+              Gestion des classes
+            </button>
+          </li>
+          <li class="animate-slideUp delay-300">
+            <button @click="activeSection = 'affectations'"
+                    :class="{ 'bg-teal-600 text-white': activeSection === 'affectations' }"
+                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
+              Gestion des affectations
+            </button>
+          </li>
+          <li class="animate-slideUp delay-400">
+            <button @click="activeSection = 'progression'"
+                    :class="{ 'bg-teal-600 text-white': activeSection === 'progression' }"
+                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
+              Progression Globale
+            </button>
+          </li>
+          <li class="animate-slideUp delay-500">
+            <button @click="activeSection = 'consulter-entrees'"
+                    :class="{ 'bg-teal-600 text-white': activeSection === 'consulter-entrees' }"
+                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
+              Consulter les entrées
+            </button>
+          </li>
+          <li class="animate-slideUp delay-600">
+            <button @click="activeSection = 'notifications'"
+                    :class="{ 'bg-teal-600 text-white': activeSection === 'notifications' }"
+                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
+              Notifications
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Bouton Déconnexion -->
+      <div class="animate-slideUp delay-700">
+        <button @click="logout" class="w-full p-2 rounded bg-black text-white hover:bg-gray-800 cursor-pointer">
+          Déconnexion
+        </button>
+      </div>
+    </aside>
+
+    <!-- Contenu principal -->
+    <div class="flex-1 pt-16 md:ml-80 mt-20 p-4">
+      <div class="max-w-5xl mx-auto space-y-6">
 
       <!-- Section Accueil -->
-      <!-- <div v-if="activeSection === 'accueil'" class="mt-4 bg-white shadow p-6 rounded-lg">
-        <h2 class="text-xl font-semibold mb-4">Accueil</h2>
-        <div class="flex justify-center items-center h-64 bg-gray-200 rounded-md">
-          <p class="text-gray-500">Photo de bienvenue à venir</p>
-        </div>
-      </div> -->
+      <div v-if="activeSection === 'accueil'">
+        <h2 class="text-2xl font-bold mb-4 typewriter">{{ user.prenoms }} {{ user.nom }}</h2>
+        
+        <div class="relative w-full h-96 rounded-lg overflow-hidden shadow-lg">
+          <!-- Image d'accueil -->
+          <img src="/src/assets/administratrice-accueil.png" 
+              alt="Accueil administrateur" 
+              class="w-full h-full object-cover">
 
+          <!-- Message d'accueil - Overlay transparent-->
+          <div class="absolute inset-0 bg-gradient-to-t from-teal-700 via-transparent to-transparent flex flex-col items-center justify-center text-center p-8">
+            <h1 class="text-4xl font-bold text-white mb-4 typewriter animate-fadeIn "> 
+              <span class="text-teal-100">Bienvenue</span> dans votre espace administrateur!</h1>
+            <p class="text-lg text-gray-100 max-w-xl animate-slideUp delay-500">
+              Pilotez votre établissement avec sérénité et inspirez votre communauté éducative.
+            </p>
+          </div>        
+        </div>
+      </div> 
+      
       <!-- Section Gestion des utilisateurs -->
       <div v-if="activeSection === 'users'" class="mt-4">
-        <div class="mt-4">
-          <button @click="$router.push('/register')" class="bg-green-500 text-white p-2 rounded hover:bg-green-600">
+        <div class="mb-4">
+          <button @click="$router.push('/register')" class="w-full sm:w-auto bg-teal-500 text-white p-4 rounded hover:bg-green-600 cursor-pointer">
             Gérer les Inscriptions
           </button>
         </div>
-        <button @click="fetchUsers" class="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Lister les utilisateurs</button>
-        <div v-if="usersLoaded">
-          <table v-if="users.length" class="mt-4 w-full border-collapse border">
-            <thead>
-              <tr>
-                <th class="border p-2">Id</th>
-                <th class="border p-2">Nom</th>
-                <th class="border p-2">Prénoms</th>
-                <th class="border p-2">Email</th>
-                <th class="border p-2">Rôle</th>
-                <th class="border p-2">Établissement</th>
-                <th class="border p-2">Actif</th>
-                <th class="border p-2">Dernière connexion</th>
-                <th class="border p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="u in users" :key="u.id">
-                <td class="border p-2">{{ u.id }}</td>
-                <td class="border p-2">{{ u.nom }}</td>
-                <td class="border p-2">{{ u.prenoms }}</td>
-                <td class="border p-2">{{ u.email }}</td>
-                <td class="border p-2">{{ u.role }}</td>
-                <td class="border p-2">{{ u.etablissement?.nom || 'N/A' }}</td>
-                <td class="border p-2">{{ u.est_actif ? 'Oui' : 'Non' }}</td>
-                <td class="border p-2">{{ formatDate(u.derniere_connexion) }}</td>
-                <td class="border p-2">
-                  <button @click="startEditing(u)" class="bg-yellow-500 text-white p-1 rounded mr-2">Modifier</button>
-                  <button @click="deleteUser(u.id)" class="bg-red-500 text-white p-1 rounded">Supprimer</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <p v-else class="mt-4">Aucun utilisateur trouvé.</p>
+        <button @click="fetchUsers" class="w-full sm:w-auto mt-2 bg-teal-500 text-white p-4 rounded hover:bg-green-600 cursor-pointer">Lister les utilisateurs</button>
+        <div v-if="usersLoaded" class="p-6">
+          <div class="overflow-x-auto">
+            <table v-if="users.length" class="w-full border-collapse border">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th class="border p-2">N°</th>
+                  <th class="border p-2">Nom</th>
+                  <th class="border p-2">Prénoms</th>
+                  <th class="border p-2">Email</th>
+                  <th class="border p-2">Rôle</th>
+                  <th class="border p-2">Établissement</th>
+                  <th class="border p-2">Actif</th>
+                  <th class="border p-2">Dernière connexion</th>
+                  <th class="border p-2">Téléphone</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="u in users" :key="u.id">
+                  <td class="border p-2">{{ u.id }}</td>
+                  <td class="border p-2">{{ u.nom }}</td>
+                  <td class="border p-2">{{ u.prenoms }}</td>
+                  <td class="border p-2">{{ u.email }}</td>
+                  <td class="border p-2">{{ u.role }}</td>
+                  <td class="border p-2">{{ u.etablissement?.nom || 'N/A' }}</td>
+                  <td class="border p-2">
+                    <button
+                      @click="toggleActivation(u)"
+                      :class="u.est_actif ? 'bg-red-600' : 'bg-green-600'"
+                      class="text-white px-3 py-1 rounded cursor-pointer"
+                    >
+                      {{ u.est_actif ? 'Désactiver' : 'Activer' }}
+                    </button>
+                  </td>
+                  <td class="border p-2">{{ formatDate(u.derniere_connexion) }}</td>
+                  <td class="border p-2">{{ u.telephone || 'N/A' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p v-else class="mt-4">Aucun utilisateur trouvé.</p>
+          </div>
         </div>
         <p v-if="!usersLoaded" class="mt-4">Cliquez sur 'Lister les utilisateurs' pour voir la liste.</p>
+          
+        <!-- Comptes en attentes de validation -->
+        <div class="p-6 mt-8">
+          <h2 class="text-xl font-bold mb-4">Comptes en attente de validation</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse border">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th class="border p-2">Nom</th>
+                  <th class="border p-2">Prénoms</th>
+                  <th class="border p-2">Email</th>
+                  <th class="border p-2">Rôle</th>
+                  <th class="border p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="user in pendingUsers" :key="user.id">
+                  <td class="border p-2">{{ user.nom }}</td>
+                  <td class="border p-2">{{ user.prenoms }}</td>
+                  <td class="border p-2">{{ user.email }}</td>
+                  <td class="border p-2">{{ user.role }}</td>
+                  <td class="border p-2">
+                    <button @click="activer(user.id)" class="bg-green-600 text-white px-3 py-1 rounded cursor-pointer">
+                      Activer
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Modal de modification d'utilisateur -->
+        <div class="p-6">
+          <h2 class="text-xl font-bold mb-4">Demandes de modification en attente</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse border">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th class="border p-2">Utilisateur</th>
+                  <th class="border p-2">Champ</th>
+                  <th class="border p-2">Ancienne valeur</th>
+                  <th class="border p-2">Nouvelle valeur</th>
+                  <th class="border p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="modif in modifications" :key="modif.id">
+                  <td class="border p-2">{{ modif.user.nom }} {{ modif.user.prenoms }} {{ modif.user.telephone || 'N/A' }} {{ modif.user.email }}</td>
+                  <td class="border p-2">{{ modif.champ }}</td>
+                  <td class="border p-2">{{ modif.ancienne_valeur }}</td>
+                  <td class="border p-2">{{ modif.nouvelle_valeur }}</td>
+                  <td class="border p-2">
+                    <button @click="valider(modif.id)" class="bg-green-600 text-white px-3 py-1 rounded cursor-pointer">
+                      Valider
+                    </button>
+                    <button @click="refuser(modif.id)" class="bg-red-600 text-white px-3 py-1 rounded ml-2 cursor-pointer">
+                      Refuser
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- Section Gestion des classes -->
-      <div v-if="activeSection === 'classes'" class="mt-4">
-        <button @click="showAddClass = true" class="mt-2 bg-green-500 text-white p-2 rounded hover:bg-green-600">Ajouter une classe</button>
-        <table v-if="classes.length" class="mt-4 w-full border-collapse border">
+      <div v-if="activeSection === 'classes'" class="mt-4 p-6">
+        <button @click="showAddClass = true" class="w-full sm:w-auto mt-2 bg-green-500 text-white p-2 rounded hover:bg-green-600">Ajouter une classe</button>
+        <div class="overflow-x-auto">
+          <table v-if="classes.length" class="mt-4 w-full border-collapse border">
           <thead>
-            <tr>
+            <tr class="bg-gray-100">
               <th class="border p-2">Nom</th>
               <th class="border p-2">Promotion</th>
               <th class="border p-2">Niveau</th>
@@ -95,13 +254,13 @@
             </tr>
           </tbody>
         </table>
-        <p v-else class="mt-4">Aucune classe trouvée.</p>
+        </div>
 
         <!-- Modal pour ajouter/modifier une classe -->
         <div v-if="showAddClass || showEditClass" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
           <div class="bg-white p-6 rounded-lg shadow-lg">
             <h3 class="text-lg font-semibold">{{ showAddClass ? 'Ajouter une classe' : 'Modifier une classe' }}</h3>
-            <form @submit.prevent="showAddClass ? addClass() : updateClass()" class="space-y-4 mt-4">
+            <form @submit.prevent="showAddClass ? addClass() : updateClass()" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
                 <label for="classNom" class="block text-sm font-medium text-gray-700">Nom :</label>
                 <input v-model="newClass.nom" id="classNom" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required />
@@ -116,9 +275,9 @@
                 <label for="classNiveau" class="block text-sm font-medium text-gray-700">Niveau :</label>
                 <input v-model="newClass.niveau" id="classNiveau" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required />
               </div>
-              <div class="flex justify-end space-x-2">
-                <button type="submit" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">{{ showAddClass ? 'Ajouter' : 'Mettre à jour' }}</button>
-                <button @click="cancelClassEdit" class="bg-gray-500 text-white p-2 rounded hover:bg-gray-600">Annuler</button>
+              <div class="flex flex-col sm:flex-row justify-end gap-2 md:col-span-2">
+                <button type="submit" class="w-full sm:w-auto bg-blue-500 text-white p-2 rounded hover:bg-blue-600">{{ showAddClass ? 'Ajouter' : 'Mettre à jour' }}</button>
+                <button @click="cancelClassEdit" class="w-full sm:w-auto bg-gray-500 text-white p-2 rounded hover:bg-gray-600">Annuler</button>
               </div>
             </form>
           </div>
@@ -126,9 +285,10 @@
       </div>
 
       <!-- Section Gestion des disciplines -->
-      <div v-if="activeSection === 'disciplines'" class="mt-4">
-        <button @click="showAddDiscipline = true" class="mt-2 bg-green-500 text-white p-2 rounded hover:bg-green-600">Ajouter une discipline</button>
-        <table v-if="disciplines.length" class="mt-4 w-full border-collapse border">
+      <div v-if="activeSection === 'disciplines'" class="mt-4 p-6">
+        <button @click="showAddDiscipline = true" class="w-full sm:w-auto mt-2 bg-green-500 text-white p-2 rounded hover:bg-green-600">Ajouter une discipline</button>
+        <div class="overflow-x-auto">
+          <table v-if="disciplines.length" class="mt-4 w-full border-collapse border">
           <thead>
             <tr>
               <th class="border p-2">Nom</th>
@@ -151,13 +311,13 @@
             </tr>
           </tbody>
         </table>
-        <p v-else class="mt-4">Aucune discipline trouvée.</p>
+        </div>
 
         <!-- Modal pour ajouter/modifier une discipline -->
         <div v-if="showAddDiscipline || showEditDiscipline" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
           <div class="bg-white p-6 rounded-lg shadow-lg">
             <h3 class="text-lg font-semibold">{{ showAddDiscipline ? 'Ajouter une discipline' : 'Modifier une discipline' }}</h3>
-            <form @submit.prevent="showAddDiscipline ? addDiscipline() : updateDiscipline()" class="space-y-4 mt-4">
+            <form @submit.prevent="showAddDiscipline ? addDiscipline() : updateDiscipline()" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
                 <label for="disciplineNom" class="block text-sm font-medium text-gray-700">Nom :</label>
                 <select v-model="newDiscipline.nom" id="disciplineNom" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
@@ -178,9 +338,9 @@
                 <label for="disciplineHeures" class="block text-sm font-medium text-gray-700">Heures/semaine :</label>
                 <input v-model.number="newDiscipline.heures_par_semaine" id="disciplineHeures" type="number" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required />
               </div>
-              <div class="flex justify-end space-x-2">
-                <button type="submit" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">{{ showAddDiscipline ? 'Ajouter' : 'Mettre à jour' }}</button>
-                <button @click="cancelDisciplineEdit" class="bg-gray-500 text-white p-2 rounded hover:bg-gray-600">Annuler</button>
+              <div class="flex flex-col sm:flex-row justify-end gap-2 md:col-span-2">
+                <button type="submit" class="w-full sm:w-auto bg-blue-500 text-white p-2 rounded hover:bg-blue-600">{{ showAddDiscipline ? 'Ajouter' : 'Mettre à jour' }}</button>
+                <button @click="cancelDisciplineEdit" class="w-full sm:w-auto bg-gray-500 text-white p-2 rounded hover:bg-gray-600">Annuler</button>
               </div>
             </form>
           </div>
@@ -193,14 +353,14 @@
 
 
       <!-- Section Gestion des affectations -->
-      <div v-if="activeSection === 'affectations'" class="mt-4">
+      <div v-if="activeSection === 'affectations'" class="mt-4 p-6">
         <h2 class="text-xl font-semibold mb-4">Gestion des Affectations Enseignants-Matières-Classes</h2>
 
         <!-- Bouton pour afficher le formulaire de nouvelle affectation -->
         <div class="mb-4">
           <button 
             @click="showNewAffectationForm = !showNewAffectationForm" 
-            class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            class="w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
           >
             {{ showNewAffectationForm ? 'Masquer' : 'Nouvelle Affectation' }}
           </button>
@@ -209,7 +369,7 @@
         <!-- Formulaire d'affectation (affiché conditionnellement) -->
         <div v-if="showNewAffectationForm" class="bg-white p-6 rounded-lg shadow mb-6">
           <h3 class="text-lg font-semibold mb-4">Nouvelle Affectation</h3>
-          <form @submit.prevent="createAffectation" class="space-y-4">
+          <form @submit.prevent="createAffectation" class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label for="enseignantId" class="block text-sm font-medium text-gray-700">Enseignant</label>
               <select v-model="newAffectation.enseignantId" id="enseignantId" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
@@ -251,9 +411,9 @@
               <label for="heuresParSemaine" class="block text-sm font-medium text-gray-700">Heures par semaine</label>
               <input v-model.number="newAffectation.heuresParSemaine" id="heuresParSemaine" type="number" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
             </div>
-            <div class="flex gap-2">
-              <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Affecter</button>
-              <button type="button" @click="cancelNewAffectation" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Annuler</button>
+            <div class="flex flex-col sm:flex-row gap-2 md:col-span-2">
+              <button type="submit" class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Affecter</button>
+              <button type="button" @click="cancelNewAffectation" class="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Annuler</button>
             </div>
           </form>
         </div>
@@ -262,7 +422,7 @@
         <div class="mb-4">
           <button 
             @click="showAffectationsList = !showAffectationsList" 
-            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
             {{ showAffectationsList ? 'Masquer' : 'Affectations Existantes' }}
           </button>
@@ -380,9 +540,10 @@
           <p class="text-gray-500">Chargement de la progression globale...</p>
         </div>
 
-        <div v-else class="space-y-6">
+        <div v-else class="p-6 space-y-6">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Progression Globale des Classes</h2>
           <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Progression Globale des Classes</h2>
+            
 
             <!-- Message si aucune classe -->
             <div v-if="!progressionClasses || progressionClasses.length === 0" class="text-center py-12">
@@ -409,7 +570,7 @@
                     </span>
                   </button>
 
-                  <!-- ✅ Affichage conditionnel avec message si aucune discipline -->
+                  <!-- Affichage conditionnel avec message si aucune discipline -->
                   <div v-if="expandedClasses[classe.id]" class="p-2 space-y-2 bg-white">
                     <!-- Message si aucune discipline -->
                     <div v-if="!classe.disciplines || classe.disciplines.length === 0" class="p-4 text-center text-gray-500 text-sm">
@@ -510,7 +671,7 @@
                             @click="toggleEntryHistory(entry.id)"
                             class="text-blue-600 hover:text-blue-800 text-sm"
                           >
-                            📝 Historique ({{ entry.history?.length || 0 }})
+                             Historique ({{ entry.history?.length || 0 }})
                           </button>
                         </div>
 
@@ -555,7 +716,7 @@
                       @click="showDeleted = !showDeleted"
                       class="w-full flex items-center justify-between font-semibold text-red-800 mb-2"
                     >
-                      <span>🗑️ Entrées supprimées ({{ disciplineDetails.deletedEntries.length }})</span>
+                      <span> Entrées supprimées ({{ disciplineDetails.deletedEntries.length }})</span>
                       <span>{{ showDeleted ? '▼' : '►' }}</span>
                     </button>
 
@@ -587,9 +748,11 @@
 
 
       <!-- Section Consulter les entrées -->
-      <div v-if="activeSection === 'consulter-entrees'" class="mt-4">
+      <div v-if="activeSection === 'consulter-entrees'" class="mt-4 p-6">
+
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 Consulter les entrées des enseignants</h2>
         <div class="bg-white shadow rounded-lg p-6">
-          <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 Consulter les entrées des enseignants</h2>
+          
 
           <!-- Filtres -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -643,7 +806,7 @@
           <div class="mb-6">
             <button 
               @click="chargerToutesLesEntrees" 
-              class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition"
+              class="w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition"
               :disabled="chargementEntrees"
             >
               <span v-if="chargementEntrees">🔄 Chargement...</span>
@@ -755,13 +918,13 @@
                     @click="voirHistoriqueEntree(entry.id)"
                     class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition"
                   >
-                    📜 Historique
+                     Historique
                   </button>
                   <button 
                     @click="supprimerEntreeAdmin(entry.id)"
                     class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition"
                   >
-                    🗑️ Supprimer
+                     Supprimer
                   </button>
                 </div>
                 <span class="text-xs text-gray-500">
@@ -1080,7 +1243,7 @@
           </div>
         </div>
 
-    </div>
+    
 
     <div v-else-if="user" class="mt-4">
       <p>Accès réservé aux administrateurs.</p>
@@ -1101,8 +1264,8 @@
           <label class="block text-sm font-medium text-gray-700">Rôle</label>
           <select v-model="editingUser.role" class="w-full p-2 border rounded" required>
             <option value="enseignant">Enseignant</option>
-            <option value="coordinateur">Coordinateur</option>
-            <option value="directeur">Directeur</option>
+            <option value="superviseur">Superviseur</option>
+            <!-- <option value="directeur">Directeur</option> -->
             <option value="admin">Administrateur</option>
           </select>
         </div>
@@ -1116,21 +1279,31 @@
         <button type="submit" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Enregistrer</button>
         <button @click="editingUser = null" class="ml-2 bg-gray-500 text-white p-2 rounded hover:bg-gray-600">Annuler</button>
       </form>
+
     </div>
+    <!-- </div>
     <button @click="logout" class="mt-4 bg-red-500 text-white p-2 rounded hover:bg-red-600">Déconnexion</button>
+  </div> -->
   </div>
+</div>
+</div>
 </template>
 
 <script>
 import api from '../api';
 
+import { startSessionTimer, stopSessionTimer } from '../utils/session';
+
+
 export default {
   name: 'AdminNotifications',
 
+
   data() {
     return {
-      user: null,
+      user: { nom: '', prenoms: '', role: '' },
       users: [],
+      pendingUsers: [],
       editingUser: null,
       usersLoaded: false,
       usersFetched: false,
@@ -1140,6 +1313,7 @@ export default {
       importSuccess: false,
       classes: [],
       disciplines: [],
+      showSidebar: false,
       showAddClass: false,
       showEditClass: false,
       newClass: { nom: '', promotion: '6e', niveau: '' },
@@ -1162,7 +1336,7 @@ export default {
       showDeleted: false,
       progressionLoading: false,
       activeSection: 'users',
-      // ✅ NOUVELLES DONNÉES pour consulter les entrées
+      // DONNÉES pour consulter les entrées
       filtreEntreesClasse: '',
       filtreEntreesDiscipline: '',
       filtreEntreesEnseignant: '',
@@ -1175,6 +1349,7 @@ export default {
       notifications: [],
       stats: {},
       enseignants: [],
+      modifications: [],
       chargement: false,
       envoi: false,
       showModal: false,
@@ -1190,8 +1365,25 @@ export default {
     };
   },
 
-  // ✅ AJOUTER LA SECTION COMPUTED
+  // SECTION COMPUTED
   computed: {
+     // Exemple : filtrer les demandes par champ
+
+    demandesNom() {
+      return this.modifications.filter(m => m.champ === 'nom');
+    },
+    demandesPrenoms() {
+      return this.modifications.filter(m => m.champ === 'prenoms');
+    },
+
+    demandesEmail() {
+      return this.modifications.filter(m => m.champ === 'email');
+    },
+    demandesTelephone() {
+      return this.modifications.filter(m => m.champ === 'telephone');
+    },
+
+
     disciplinesUniques() {
       const disciplines = new Set();
       this.disciplines.forEach(d => disciplines.add(d.nom));
@@ -1255,12 +1447,22 @@ export default {
   },
 
   async mounted() {
+    startSessionTimer(); // ✅ démarre le compte à rebours dès l'ouverture
+
+
     await Promise.all([
       this.chargerNotifications(),
       this.chargerStatistiques(),
-      this.chargerEnseignants()
+      this.chargerEnseignants(),
+      this.chargerModifications(),
+      this.chargerPendingUsers(),
     ]);
   },
+
+   beforeUnmount() {
+    stopSessionTimer(); // ✅ nettoyage quand on quitte le composant
+  },
+
 
   methods: {
     async fetchUsers() {
@@ -1273,6 +1475,29 @@ export default {
         console.error('Erreur liste utilisateurs:', error.response?.data);
         this.usersFetched = true;
       }
+    },
+
+    async chargerPendingUsers() {
+      try {
+        // Comptes inactifs
+        // const resInactifs = await api.get('/users?est_actif=false');
+
+        // Comptes jamais validés
+        const resNonValides = await api.get('/users?est_valide=false');
+
+        this.pendingUsers = [
+          // ...resInactifs.data,
+          ...resNonValides.data
+        ];
+
+      } catch (error) {
+        console.error('Erreur chargement comptes en attente:', error);
+      }
+    },
+    async activer(id) {
+      await api.post(`/users/${id}/activate`);
+      this.pendingUsers = this.pendingUsers.filter(u => u.id !== id);
+      if (this.usersLoaded) await this.fetchUsers(); // sync la liste principale
     },
 
     startEditing(user) {
@@ -1301,6 +1526,57 @@ export default {
         }
       }
     },
+
+    async chargerModifications() {
+      try {
+        const res = await api.get('/user-modifications');
+        this.modifications = res.data;
+      } catch (error) {
+        console.error('Erreur chargement demandes:', error);
+      }
+    },
+
+
+    async valider(id) {
+      try {
+        await api.post(`/user-modifications/${id}/validate`);
+        this.modifications = this.modifications.filter(m => m.id !== id);
+        alert('Modification validée');
+      } catch (error) {
+        console.error('Erreur validation:', error);
+      }
+    },
+    async refuser(id) {
+      try {
+        await api.post(`/user-modifications/${id}/reject`, {
+          commentaire: 'Refusé par l’admin'
+        });
+        this.modifications = this.modifications.filter(m => m.id !== id);
+        alert('Modification refusée');
+      } catch (error) {
+        console.error('Erreur refus:', error);
+      }
+    },
+
+    async toggleActivation(user) {
+      try {
+        if (user.est_actif) {
+        // Désactiver
+        await api.post(`/users/${user.id}/deactivate`);
+        
+        alert('Utilisateur désactivé avec succès');
+      } else {
+        // Activer
+        await api.post(`/users/${user.id}/activate`);
+        
+        alert('Utilisateur activé avec succès');
+      }
+      // Rafraîchir la liste des utilisateurs
+      await this.fetchUsers();
+    } catch (error) {
+      console.error('Erreur activation/désactivation:', error);
+    }
+  },
 
     async fetchClasses() {
       try {
@@ -1390,8 +1666,10 @@ export default {
       return classe ? classe.nom : 'Inconnue';
     },
 
-    logout() {
+     logout() {
+      stopSessionTimer();
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       this.$router.push('/login');
     },
 
@@ -1636,7 +1914,7 @@ export default {
       }
     },
 
-    // ✅ NOUVELLES MÉTHODES pour consulter les entrées
+    //  MÉTHODES pour consulter les entrées
     async chargerToutesLesEntrees() {
       this.chargementEntrees = true;
       try {
@@ -1683,6 +1961,10 @@ export default {
       }
     },
 
+
+    
+  
+
     async chargerNotifications() {
       try {
         this.chargement = true;
@@ -1714,7 +1996,7 @@ export default {
 
     async chargerEnseignants() {
       try {
-        const response = await api.get('/users'); // À adapter selon votre route
+        const response = await api.get('/users'); //
         this.enseignants = response.data.filter(u => u.role === 'enseignant');
       } catch (error) {
         console.error('Erreur enseignants:', error);
@@ -1829,8 +2111,82 @@ export default {
     }
   }
 };
+
+
 </script>
 
 <style scoped>
 /* Styles existants */
+
+
+.notifications-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes zoom {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Classes utilitaires */
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-in-out;
+}
+.animate-slideUp {
+  animation: slideUp 0.4s ease-out;
+}
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-600 { animation-delay: 0.6s; }
+.delay-700 { animation-delay: 0.7s; }
+.delay-800 { animation-delay: 0.8s; }
+
+.animate-zoom {
+  animation: zoom 0.2s ease-in-out;
+}
+
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink {
+  50% { border-color: transparent }
+}
+
+@keyframes hideCursor {
+  to { border-right-color: transparent }
+}
+
+.typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: .15em solid teal;
+
+  /* 3 animations enchaînées */
+  animation:
+    typing 4s steps(40, end),
+    blink .75s step-end infinite,
+    hideCursor 0s linear 4s forwards;
+}
+
+
+
 </style>

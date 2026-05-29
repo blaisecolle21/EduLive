@@ -1,11 +1,9 @@
 <script setup>
-const name = 'TBook'
+const name = 'Edulive'
 </script>
 
 <template>
-  <header class="bg-stone-500 text-white p-4">
-    <h1 class="text-2xl">Bienvenue sur la plateforme de gestion du Cahier de Texte {{ name }}</h1>
-  </header>
+  
   
   <router-view></router-view>
 </template>

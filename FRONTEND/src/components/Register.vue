@@ -23,9 +23,9 @@
           <label class="block text-sm font-medium text-gray-700">Rôle</label>
           <select v-model="form.role" class="w-full p-2 border rounded" required>
             <option value="enseignant">Enseignant</option>
-            <option value="coordinateur">Coordinateur</option>
-            <option value="directeur">Directeur</option>
-            <option value="admin">Administrateur</option>
+            <!-- <option value="coordinateur">Superviseur</option> -->
+            <!-- <option value="directeur">Directeur</option> -->
+            <!-- <option value="admin">Administrateur</option> -->
           </select>
         </div>
         <div class="mb-4">

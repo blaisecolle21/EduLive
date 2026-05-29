@@ -9,7 +9,7 @@
     <div class="absolute -bottom-20 left-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl animate-blob animation-delay-4000"></div>
     
     <!-- Main Container -->
-    <div class="relative z-10 w-full max-w-6xl mx-4 flex items-center justify-between gap-12">
+    <div class="top-20 relative z-10 w-full max-w-6xl mx-4 flex items-center justify-between gap-12">
       
       <!-- Left Section - Branding & Info -->
       <div class="hidden lg:flex flex-col space-y-6 text-white flex-1">
@@ -168,20 +168,22 @@
         </div>
         
         <!-- Copyright -->
-        <div class="text-center mt-6 text-white">
+          <div class="text-center mt-6 text-white">
           <p class="text-sm text-indigo-200">
-            © 2025 Cahier de Texte - Tous droits réservés
+            © 2026 EduLive - Tous droits réservés
           </p>
-        </div>
+        </div> 
       </div>
     </div>
   </div>
+
 </template>
 
 
 
 <script>
 import api from '../api';
+import { startSessionTimer } from '../utils/session';
 
 export default {
   data() {
@@ -197,17 +199,25 @@ export default {
   methods: {
     async login() {
       try {
+        console.log("login attempt");
         const response = await api.post('/auth/login', this.form);
+        console.log("Login response");
         localStorage.setItem('token', response.data.token);
-        const user = response.data.user; // Assure-toi que l'API renvoie l'utilisateur
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+
+        startSessionTimer(); //  démarre le timer immédiatement après connexion
+
+        // console.log("Token stored");
+        const user = response.data.user; // API renvoie l'utilisateur
        if (user.role === 'admin') {
           this.$router.push('/dashboard?section=accueil'); // Rediriger vers /dashboard avec section accueil
         } else if (user.role === 'enseignant') {
           this.$router.push('/enseignant'); // Rediriger vers Enseignant.vue
         } else {
-          this.$router.push('/dashboard'); // Rediriger vers Dashboard.vue pour autres rôles
+          this.$router.push('/enseignant'); // Rediriger vers Dashboard.vue pour autres rôles
         }
       } catch (error) {
+        console.log(import.meta.env.MODE);
         this.error = error.response?.data?.error || 'Erreur de connexion';
       }
     }

@@ -1,48 +1,115 @@
 <template>
-  <div class="min-h-screen flex bg-blue-100">
-    <!-- Sidebar gauche -->
-    <div class="w-64 bg-white shadow-md">
+  <div class="min-h-screen relative flex bg-blue-100 overflow-hidden">
+
+            
+
+
+<!-- Bouton pour ouvrir/fermer la sidebar -->
+    <!-- Bouton pour ouvrir/fermer la sidebar (mobile uniquement) -->
+    <button
+      @click="showSidebar = !showSidebar"
+      class="md:hidden px-3 py-1 bg-blue-600 text-white rounded mb-4"
+    >
+      {{ showSidebar ? "Fermer Menu" : "Ouvrir Menu" }}
+    </button>
+
+    <!-- Overlay semi-transparent (mobile) -->
+    <div
+      v-if="showSidebar"
+      @click="showSidebar = false"
+      class="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 z-40 md:hidden"
+    ></div>
+
+    <!-- Sidebar -->
+    <aside
+      class="fixed md:fixed top-20 left-0 w-64 bg-white shadow-md h-full transition-transform duration-300 z-50"
+      :class="showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
+    >
+      <!-- Badge utilisateur -->
+      <div class="flex flex-col items-center p-6 border-b animate-fadeIn">
+        <div class="w-16 h-16 rounded-full bg-teal-600 text-white flex items-center justify-center text-2xl font-bold">
+          {{ user.prenoms.charAt(0) }}{{ user.nom.charAt(0) }}
+        </div>
+        <p class="mt-3 font-semibold text-gray-800">{{ user.prenoms }} {{ user.nom }}</p>
+        <p class="text-sm text-gray-500">{{ user.role }}</p>
+      </div>
+
+      <!-- Menu -->
       <div class="p-4">
-        <h2 class="text-xl font-bold mb-4">Menu</h2>
+        <h2 class="text-xl font-bold mb-4 animate-fadeIn">Menu</h2>
         <ul class="space-y-2">
-          <li>
-            <button @click="activeSection = 'accueil'" :class="{ 'bg-blue-500 text-white': activeSection === 'accueil' }" class="w-full p-2 rounded hover:bg-blue-600">
-              Accueil
+          <li class="animate-slideUp delay-100">
+            <button @click="activeSection = 'mes-classes'"
+                    :class="{ 'bg-teal-600 text-white': activeSection === 'mes-classes' }"
+                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
+               Mes Classes
             </button>
           </li>
-          <li>
-            <button @click="activeSection = 'mes-classes'" :class="{ 'bg-blue-500 text-white': activeSection === 'mes-classes' }" class="w-full p-2 rounded hover:bg-blue-600">
-              Mes Classes
+          <li class="animate-slideUp delay-200">
+            <button @click="activeSection = 'progression'"
+                    :class="{ 'bg-teal-600 text-white': activeSection === 'progression' }"
+                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
+               Progression
             </button>
           </li>
-          <li>
-            <button @click="activeSection = 'progression'" :class="{ 'bg-blue-500 text-white': activeSection === 'progression' }" class="w-full p-2 rounded hover:bg-blue-600">
-              Progression par classes
+          <li class="animate-slideUp delay-300">
+            <button @click="activeSection = 'notification'"
+                    :class="{ 'bg-teal-600 text-white': activeSection === 'notification' }"
+                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
+               Notifications
             </button>
           </li>
-          <li>
-            <button @click="activeSection = 'notification'" :class="{ 'bg-blue-500 text-white': activeSection === 'notification' }" class="w-full p-2 rounded hover:bg-blue-600">
-              Notification
+          <li class="animate-slideUp delay-400">
+            <button @click="activeSection = 'infos-personnelles'"
+                    :class="{ 'bg-teal-600 text-white': activeSection === 'infos-personnelles' }"
+                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
+               Mes Informations
             </button>
           </li>
         </ul>
       </div>
-    </div>
-    
+
+      <!-- Bouton Déconnexion -->
+      <div class=" animate-slideUp delay-500">
+        <button @click="logout" class="w-full p-2 rounded bg-black text-white hover:bg-gray-800 cursor-pointer">
+           Déconnexion
+        </button>
+      </div>
+    </aside>
+
     <!-- Contenu principal -->
-    <div class="flex-1 p-4">
-      <h1 class="text-3xl font-bold mb-4">Tableau de bord Enseignant</h1>
-      <p v-if="user">Bienvenue, {{ user.prenoms }} {{ user.nom }} ({{ user.role }})</p>
-      <p v-else>Chargement...</p>
+    <div class="flex-1 pt-16 md:ml-80 mt-20 p-4">
+      <!-- <h1 class="text-3xl font-bold mb-4">Espace Enseignant</h1>
+      <p v-if="user">Bienvenue, {{ user.prenoms }} {{ user.nom }} ({{ user.role }})</p> -->
+      <!-- <p v-else>Chargement...</p> -->
+      
       
       <!-- Section Accueil -->
-      <div v-if="activeSection === 'accueil'">
-        <h2 class="text-2xl font-bold mb-4">Accueil</h2>
-        <p>Sélectionnez une option dans le menu pour accéder aux fonctionnalités.</p>
-      </div>
+      <div v-if="activeSection === 'accueil'" class="max-w-5xl mx-auto space-y-6">
+        <h2 class="text-2xl font-bold mb-4 typewriter">{{ user.prenoms }} {{ user.nom }}</h2>
+        
+        <div class="relative w-full h-96 rounded-lg overflow-hidden shadow-lg">
+          <!-- Image d'accueil -->
+          <img src="/src/assets/enseignant-accueil.png" 
+              alt="Accueil enseignant" 
+              class="w-full h-full object-cover">
+
+          <!-- Message d'accueil - Overlay transparent-->
+
+          <div class="absolute inset-0 bg-gradient-to-t from-teal-700 via-transparent to-transparent flex flex-col items-center justify-center text-center p-8">
+            <h1 class="text-4xl font-bold text-white mb-4 typewriter animate-fadeIn "> 
+              <span class="text-teal-100">Bienvenue</span> dans votre espace enseignant!</h1>
+              
+                  <p class="text-lg text-gray-100 max-w-xl animate-slideUp delay-500">
+            Un lieu pensé pour vous accompagner, organiser vos cours et inspirer vos élèves chaque jour.
+                  </p>
+          </div>        
+        </div>
+
+      </div> 
       
       <!-- Section Mes Classes -->
-      <div v-if="activeSection === 'mes-classes'">
+      <div v-if="activeSection === 'mes-classes'" class="max-w-5xl mx-auto space-y-6">
         <!-- Liste des classes de l'enseignant -->
         <h2 class="text-xl font-semibold mb-4">Mes Classes</h2>
         <div v-if="loadingClasses" class="text-center">Chargement des classes...</div>
@@ -51,11 +118,11 @@
           v-for="classe in uniqueClasses"
           :key="classe.id"
           @click="selectClass(classe.id)"
-          :class="{ 'ring-2 ring-blue-500': selectedClassId === classe.id }"
-          class="bg-white p-4 rounded-lg shadow cursor-pointer hover:bg-gray-100 transition"
+          :class="{ 'ring-2 ring-teal-500 ring-offset-2 transition animate-zoom': selectedClassId === classe.id }"
+          class="bg-white p-4 rounded-lg shadow cursor-pointer hover:bg-gray-100 hover:scale-105 transition-transform duration-200 animate-fadeIn"
           >
-          <h3 class="text-lg font-medium">{{ classe.nom }} ({{ classe.promotion }})</h3>
-          <p class="text-sm text-gray-600">Niveau: {{ classe.niveau }}</p>
+          <h3 class="text-xl font-semibold flex items-center gap-2"> 📘 {{ classe.nom }} ({{ classe.promotion }})</h3>
+          <span class="inline-block mt-2 bg-teal-100 text-blue-700 px-2 py-1 rounded-full text-xs">Niveau: {{ classe.niveau }}</span>
         </div>
       </div>
       <p v-else class="mt-4">Aucune classe trouvée. Vérifiez vos associations avec les disciplines.</p>
@@ -65,14 +132,14 @@
         <h2 class="text-xl font-semibold mb-4">Cahier de texte - {{ getClassName(selectedClassId) }}</h2>
         
         <!-- Affichage des disciplines disponibles -->
-        <div class="bg-blue-50 p-4 rounded-lg mb-4">
+        <div class="bg-teal-50 p-4 rounded-lg mb-4">
           <p class="text-sm font-medium text-gray-700">
             Discipline(s) enseignée(s) dans cette classe : 
-            <span class="font-bold text-blue-600">{{ userDisciplines.map(d => d.nom).join(', ') || 'Aucune' }}</span>
+            <span class="font-bold text-teal-600">{{ userDisciplines.map(d => d.nom).join(', ') || 'Aucune' }}</span>
           </p>
         </div>
         
-        <button @click="openAddEntryForm" class="bg-green-500 text-white p-2 rounded hover:bg-green-600 mb-4">
+        <button @click="openAddEntryForm" class="w-full md:w-auto bg-green-500 text-white p-2 rounded hover:bg-green-600 mb-4 cursor-pointer">
           ➕ Ajouter une entrée
         </button>
         
@@ -130,7 +197,7 @@
               </td>
               <td class="border border-gray-300 p-3">{{ entry.trimestre }}</td>
               
-              <!-- ✅ NOUVELLE COLONNE: Progression -->
+              <!-- NOUVELLE COLONNE: Progression -->
               <td class="border p-2">
                 <div class="flex items-center space-x-2">
                   <div class="flex-1 bg-gray-200 rounded-full h-2">
@@ -419,7 +486,7 @@
 
 <!-- Horaires -->
 
-<div class="grid grid-cols-2 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
   <div>
     <label for="entryHeureDebut" class="block text-sm font-medium text-gray-700">Heure de début <span class="text-red-500">*</span></label>
     <input v-model="newEntry.heureDebut" id="entryHeureDebut" type="time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required />
@@ -433,7 +500,7 @@
 
 <!-- Date et Trimestre -->
 
-<div class="grid grid-cols-2 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
   <div>
     <label for="entryDateCours" class="block text-sm font-medium text-gray-700">Date <span class="text-red-500">*</span></label>
     <input v-model="newEntry.dateCours" id="entryDateCours" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required @change="calculatePeriod" />
@@ -450,14 +517,12 @@
 
 <!-- Bouton d'action -->
 
-<div class="flex justify-end space-x-2 pt-4 border-t">
-  <button type="submit" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500" :disabled="!isFormValid" >
+<div class="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
+  <button type="submit" class="w-full sm:w-auto bg-blue-500 text-white p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500" :disabled="!isFormValid" >
     {{ editingEntry ? '✅Mettre à jour' : '➕ Ajouter' }}
   </button>
-  <button type="button" @click="cancelEntryEdit" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
-    
-    ❌ Annuler
-    
+  <button type="button" @click="cancelEntryEdit" class="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+    Annuler
   </button>
 </div>
 </form>
@@ -466,7 +531,7 @@
 </div>
 
 <!-- Section Progression par classes -->
-<div v-if="activeSection === 'progression'" class="space-y-6">
+<div v-if="activeSection === 'progression'" class="max-w-5xl mx-auto space-y-6">
   <h2 class="text-2xl font-bold mb-4">Progression par classes</h2>
   
   <!-- Sélection de la classe -->
@@ -479,12 +544,12 @@
       v-for="classe in uniqueClasses"
       :key="'prog-' + classe.id"
       @click="selectProgressionClass(classe.id)"
-      :class="{ 'ring-4 ring-blue-500 bg-blue-50': selectedProgressionClassId === classe.id }"
-      class="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-lg transition"
+      :class="{ 'ring-4 ring-teal-500 ing-offset-2 animate-zoom': selectedProgressionClassId === classe.id }"
+      class="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-lg hover:scale-105 transition-transform duration-200 animate-fadeIn"
       >
-      <h4 class="text-lg font-medium">{{ classe.nom }}</h4>
+      <h4 class="text-xl font-semibold flex items-center gap-2">{{ classe.nom }}</h4>
       <p class="text-sm text-gray-600">{{ classe.promotion }}</p>
-      <p class="text-xs text-gray-500 mt-1">Niveau: {{ classe.niveau }}</p>
+      <p class="inline-block mt-2 bg-teal-100 text-blue-700 px-2 py-1 rounded-full text-xs">Niveau: {{ classe.niveau }}</p>
     </div>
   </div>
   <p v-else class="text-gray-500 italic">Aucune classe trouvée</p>
@@ -493,7 +558,7 @@
 <!-- Sélection de la discipline -->
 <div v-if="selectedProgressionClassId" class="mt-6 p-4 bg-gray-50 rounded-lg">
   <h3 class="text-lg font-semibold mb-3">
-    Sélectionnez une discipline dans {{ getClassName(selectedProgressionClassId) }} :
+    Sélectionnez une discipline pour la classe de {{ getClassName(selectedProgressionClassId) }} :
   </h3>
   <div v-if="progressionDisciplines.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
     <button
@@ -501,12 +566,12 @@
     :key="'prog-disc-' + discipline.id"
     @click="selectProgressionDiscipline(discipline.id)"
     :class="{
-      'bg-blue-600 text-white border-blue-700': selectedProgressionDisciplineId === discipline.id,
+      'bg-teal-600 text-white border-teal-700': selectedProgressionDisciplineId === discipline.id,
       'bg-white text-gray-700 border-gray-300 hover:bg-gray-100': selectedProgressionDisciplineId !== discipline.id
     }"
     class="p-3 rounded-lg border-2 font-medium transition"
     >
-    {{ discipline.nom }}
+    📐 {{ discipline.nom }}
   </button>
 </div>
 <p v-else class="text-gray-500 italic">Aucune discipline enseignée dans cette classe</p>
@@ -624,16 +689,16 @@
   <!-- Actions rapides -->
   <div class="bg-white rounded-lg shadow p-6">
     <h4 class="text-lg font-semibold mb-4">Actions Rapides</h4>
-    <div class="flex flex-wrap gap-3">
+    <div class="flex flex-col sm:flex-row gap-3">
       <button 
       @click="activeSection = 'mes-classes'; selectClass(selectedProgressionClassId)"
-      class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+      class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
       >
       📝 Ajouter une entrée
     </button>
     <button 
     @click="loadProgressionData"
-    class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
+    class="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
     >
     🔄 Actualiser
   </button>
@@ -644,9 +709,9 @@
 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
   <h4 class="font-semibold text-blue-900 mb-2">ℹ️ Comment est calculée la progression ?</h4>
   <ul class="text-sm text-blue-800 space-y-1 list-disc list-inside">
-    <li>La progression est basée sur les activités marquées comme "Fait" dans vos entrées de cahier</li>
-    <li>Chaque activité terminée contribue proportionnellement au taux prévu du programme</li>
-    <li>Le total reflète votre avancement par rapport au programme théorique officiel</li>
+    <li>La progression est basée sur les lots d'activités marqués comme "Fait" dans vos entrées de cahier</li>
+    <li>Chaque lot d'activités terminé contribue proportionnellement au taux prévu du programme</li>
+    <li>Le total reflète votre avancement par rapport au programme officiel</li>
   </ul>
 </div>
 </div>
@@ -677,8 +742,8 @@
 
 <!-- Section Notification -->
 <div v-if="activeSection === 'notification'">
-  <div class="notifications-container p-6">
-    <div class="flex items-center justify-between mb-6">
+  <div class="notifications-container p-6 max-w-5xl mx-auto">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
       <h2 class="text-2xl font-bold text-gray-800">
         🔔 Notifications
       </h2>
@@ -693,7 +758,7 @@
           @click="chargerNotifications(true)"
           class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
         >
-          🔄 Actualiser
+          Actualiser
         </button>
       </div>
     </div>
@@ -709,7 +774,7 @@
             'bg-gray-200 text-gray-700': categorieFiltre !== categorie.value,
             [categorie.colorClass]: categorieFiltre === categorie.value
           }"
-          class="px-4 py-2 rounded-lg font-medium transition"
+          class="w-full sm:w-auto px-4 py-2 rounded-lg font-medium transition"
         >
           {{ categorie.emoji }} {{ categorie.label }}
         </button>
@@ -850,7 +915,7 @@
     </div>
 
     <!-- Pagination -->
-    <div v-if="stats.total > limit" class="mt-6 flex items-center justify-center space-x-4">
+    <div v-if="stats.total > limit" class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
       <button
         @click="pagePrecedente"
         :disabled="offset === 0"
@@ -872,7 +937,42 @@
   </div>
 </div>
 
-<button @click="logout" class="mt-4 bg-red-500 text-white p-2 rounded hover:bg-red-600">Déconnexion</button>
+  <div v-if="activeSection === 'infos-personnelles'" class="max-w-5xl mx-auto space-y-6">
+    <div class="mt-4 p-6 bg-white rounded-lg shadow">
+      <h2 class="text-2xl font-bold mb-4">Mes Informations</h2>
+      <div v-if="user" class="p-6 space-y-3">
+         <p><strong>Nom :</strong> {{ user.nom }}</p>
+         <p><strong>Prénoms :</strong> {{ user.prenoms }}</p>
+         <p><strong>Email :</strong> {{ user.email }}</p>
+         <p><strong>Téléphone :</strong> {{ user.telephone }}</p>
+         <p><strong>Établissement :</strong> {{ user.etablissement_id }}</p>
+         <p><strong>Rôle :</strong> {{ user.role }}</p>
+      </div>
+    </div>
+
+    <h3 class="mt-6 font-semibold">Proposer une modification</h3>
+    <form @submit.prevent="proposerModification">
+
+      <label>Nom</label>
+      <input v-model="nouveauNom" class="border p-2 w-full" type="text" />
+
+      <label>Prénoms</label>
+      <input v-model="nouveauxPrenoms" class="border p-2 w-full" type="text" />
+
+      <label>Email</label>
+      <input v-model="nouvelEmail" class="border p-2 w-full" type="email" />
+
+      <label>Téléphone</label>
+      <input v-model="nouveauTel" class="border p-2 w-full" type="text" />
+
+      <button class="mt-4 w-full sm:w-auto bg-teal-600 text-white px-4 py-2 rounded hover:bg-green-700 transition cursor-pointer">
+        Envoyer la demande
+      </button>
+    </form>
+
+  </div>
+
+<!-- <button @click="logout" class="mt-4 bg-red-500 text-white p-2 rounded hover:bg-red-600">Déconnexion</button> -->
 </div>
 </div>
 </template>
@@ -882,6 +982,12 @@ import api from '../api';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import MenuBar from './MenuBar.vue';
+// import '../assets/animations.css';
+import { startSessionTimer, stopSessionTimer } from '../utils/session';
+
+
+
+
 
 export default {
   name: 'NotificationsEnseignant',
@@ -891,7 +997,13 @@ export default {
   },
   data() {
     return {
+      showSidebar: false,
       user: null,
+      modifications: [],
+      nouveauNom: '',
+      nouveauxPrenoms: '',
+      nouvelEmail: '',
+      nouveauTel: '',
       classes: [],
       disciplines: [],
       cahierEntries: [],
@@ -956,6 +1068,21 @@ export default {
     };
   },
   computed: {
+
+    demandesNom() {
+      return this.modifications.filter(m => m.champ === 'nom');
+    },
+    demandesPrenoms() {
+      return this.modifications.filter(m => m.champ === 'prenoms');
+    },
+    demandesEmail() {
+      return this.modifications.filter(m => m.champ === 'email');
+    },
+    demandesTelephone() {
+      return this.modifications.filter(m => m.champ === 'telephone');
+    },
+
+
     uniqueClasses() {
       return this.classes;
     },
@@ -1063,7 +1190,7 @@ export default {
 
   },
   
-  
+    
   
   
   async created() {
@@ -1073,7 +1200,7 @@ export default {
       onUpdate: ({ editor }) => {
         this.newEntry.contenu = editor.getHTML();
       }
-    });
+    })
     
     try {
       this.loadingClasses = true;
@@ -1094,16 +1221,64 @@ export default {
     }
   },
   beforeUnmount() {
+    stopSessionTimer();// Nettoyage quand on quitte le composant
+
     if (this.editor) {
       this.editor.destroy();
     }
   },
 
   async mounted() {
-    await this.chargerNotifications();
+    startSessionTimer();// Pour démarrer le compte a reboursde la session dès l'ouverture
+
+    await Promise.all([
+      this.chargerNotifications(),
+      this.chargerProfil()
+    ]);
   },
 
   methods: {
+
+    async chargerProfil() {
+      const res = await fetch('/api/users/me', {
+        headers: { 'Authorization': 'Bearer ' + this.$store.state.token }
+      });
+      this.user = await res.json();
+    },
+
+
+    async proposerModification() {
+      const demandes = [];
+
+      if (this.nouveauNom && this.nouveauNom !== this.user.nom) {
+        demandes.push({ champ: 'nom', ancienne_valeur: this.user.nom, nouvelle_valeur: this.nouveauNom });
+      }
+      if (this.nouveauxPrenoms && this.nouveauxPrenoms !== this.user.prenoms) {
+        demandes.push({ champ: 'prenoms', ancienne_valeur: this.user.prenoms, nouvelle_valeur: this.nouveauxPrenoms });
+      }
+      if (this.nouvelEmail && this.nouvelEmail !== this.user.email) {
+        demandes.push({ champ: 'email', ancienne_valeur: this.user.email, nouvelle_valeur: this.nouvelEmail });
+      }
+      if (this.nouveauTel && this.nouveauTel !== this.user.telephone) {
+        demandes.push({ champ: 'telephone', ancienne_valeur: this.user.telephone, nouvelle_valeur: this.nouveauTel });
+      }
+
+      try {
+        for (const demande of demandes) {
+          // ✅ utilise Axios configuré avec baseURL et intercepteur JWT
+          await api.post('/user-modifications', demande);
+        }
+
+        alert('Vos demandes ont été envoyées et attendent validation.');
+      } catch (error) {
+        console.error('Erreur envoi demande:', error);
+        alert('Une erreur est survenue lors de l’envoi des demandes.');
+      }
+    },
+
+
+
+
     selectClass(classId) {
       this.selectedClassId = classId;
       this.showForm = false;
@@ -1114,7 +1289,7 @@ export default {
       const classe = this.classes.find(c => c.id === classId);
       return classe ? `${classe.nom} (${classe.promotion})` : 'Inconnue';
     },
-    // ✅ CORRIGER getDisciplineName pour gérer les relations
+    // ✅ CORrection decd getDisciplineName pour gérer les relations
     getDisciplineName(disciplineId) {
       // Chercher d'abord dans les disciplines de la classe
       if (this.selectedClassId) {
@@ -1310,7 +1485,9 @@ export default {
       }
     },
     logout() {
+      stopSessionTimer();
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       this.$router.push('/login');
     },
     formatDate(date) {
@@ -1645,6 +1822,85 @@ Date.prototype.getWeek = function() {
 .notifications-container {
   max-width: 1200px;
   margin: 0 auto;
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes zoom {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Classes utilitaires */
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-in-out;
+}
+.animate-slideUp {
+  animation: slideUp 0.4s ease-out;
+}
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+.animate-zoom {
+  animation: zoom 0.2s ease-in-out;
+}
+
+
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink {
+  50% { border-color: transparent }
+}
+
+@keyframes hideCursor {
+  to { border-right-color: transparent }
+}
+
+.typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: .15em solid teal;
+
+  /* 3 animations enchaînées */
+  animation:
+    typing 4s steps(40, end),
+    blink .75s step-end infinite,
+    hideCursor 0s linear 4s forwards;
+}
+
+
+@keyframes wave {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-wave {
+  animation: wave 6s linear infinite;
+}
+
+.animate-wave-slow {
+  animation: wave 10s linear infinite;
 }
 
 </style>

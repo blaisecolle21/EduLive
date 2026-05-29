@@ -13,8 +13,7 @@ const routes = [
   { path: '/enseignant', component: Enseignant, meta: { requiresAuth: true } },
   { path: '/', redirect: '/login' },
   { path: '/forgot-password', component: ForgotPassword },
-  { path: '/reset-password/:token', component: ResetPassword },
-  { path: '/', redirect: '/login' }
+  { path: '/reset-password/:token', component: ResetPassword }
 ];
 
 const router = createRouter({
