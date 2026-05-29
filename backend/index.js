@@ -1,9 +1,9 @@
 require('dotenv').config();
 
-const express = require ('express');
+const express = require('express');
 const cors = require('cors');
-const bodyParser = require ('body-parser');
-const {sequelize} = require('./src/config/database');
+const bodyParser = require('body-parser');
+const { sequelize } = require('./src/config/database');
 
 
 const port = 6300;
@@ -30,23 +30,26 @@ app.use('/api/users', require('./src/routes/users'));
 app.use('/api/programs', require('./src/routes/programs'));
 app.use('/api/cahier', require('./src/routes/cahier'));
 app.use('/api/progressionAdmin', require('./src/routes/progressionAdmin'));
-app.use('/api/progression', require('./src/routes/progression')); 
+app.use('/api/progression', require('./src/routes/progression'));
 app.use('/api/notifications', require('./src/routes/notifications'));
+app.use('/api/user-modifications', require('./src/routes/userModifications'));
+
+
 
 async function aunthenticateDb() {
-    try{
-        await sequelize.authenticate();
-        console.log("✅ Connexion à MariaDB réussie !");
+  try {
+    await sequelize.authenticate();
+    console.log("✅ Connexion à MariaDB réussie !");
 
-        // Synchronisation des modèles
-        await sequelize.sync({ alter: false });
-        console.log("✅ Modèles synchronisés avec succès !");
-    }catch (error){
-        console.log ("❌Impossible de se conecter à MariaDB!");
-        console.log(error)
-    };
-    
-    
+    // Synchronisation des modèles
+    await sequelize.sync({ alter: false });
+    console.log("✅ Modèles synchronisés avec succès !");
+  } catch (error) {
+    console.log("❌Impossible de se conecter à MariaDB!");
+    console.log(error)
+  };
+
+
 }
 
 
@@ -64,6 +67,6 @@ process.on('unhandledRejection', (reason) => {
   console.error("❌ Rejet de promesse non géré :", reason.stack || reason);
 });
 
-app.listen(port, ()=>{
-    console.log(`🚀 Serveur démarré sur http://localhost:${port}`)
+app.listen(port, () => {
+  console.log(`🚀 Serveur démarré sur http://localhost:${port}`)
 });

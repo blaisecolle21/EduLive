@@ -33,11 +33,11 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    underscored: true // AJOUTER CETTE LIGNE pour gérer automatiquement les snake_case
+    underscored: true // CETTE LIGNE  gère automatiquement les snake_case
   });
 
   Discipline.associate = (models) => {
-    // Utiliser 'Classe' (tel que défini dans database.js)
+    // Utilisation de  'Classe' (tel que défini dans database.js)
     Discipline.belongsTo(models.Classe, {
       foreignKey: 'classe_id',
       as: 'Classe'

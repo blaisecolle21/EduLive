@@ -32,7 +32,7 @@ module.exports = (sequelize) => {
       allowNull: false
     },
     role: {
-      type: DataTypes.ENUM('enseignant', 'coordinateur', 'directeur', 'admin'),
+      type: DataTypes.ENUM('enseignant', 'admin'),
       allowNull: false
     },
     etablissement_id: {
@@ -45,7 +45,13 @@ module.exports = (sequelize) => {
     },
     est_actif: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true
+      defaultValue: false
+    },
+
+    // Migration / modèle User : ajouter
+    est_valide: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false  // false = jamais validé par l'admin
     },
     derniere_connexion: {
       type: DataTypes.DATE,
@@ -56,7 +62,7 @@ module.exports = (sequelize) => {
       allowNull: true
     },
     token_reset_expire: {
-      type: DataTypes.DATE,
+      type: DataTypes.BIGINT,
       allowNull: true
     },
     preferences_notifications: {
@@ -82,15 +88,15 @@ module.exports = (sequelize) => {
     underscored: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    hooks:{
-      beforeCreate :async(user) => {
+    hooks: {
+      beforeCreate: async (user) => {
         if (user.mot_de_passe) {
           const salt = await bcrypt.genSalt(10);
           user.mot_de_passe = await bcrypt.hash(user.mot_de_passe, salt);
         }
       },
-      beforeUpdate : async(user) => {
-        if(user.mot_de_passe && user.changed('mot_de_passe')) {
+      beforeUpdate: async (user) => {
+        if (user.mot_de_passe && user.changed('mot_de_passe')) {
           const salt = await bcrypt.genSalt(10);
           user.mot_de_passe = await bcrypt.hash(user.mot_de_passe, salt);
         }
@@ -99,17 +105,17 @@ module.exports = (sequelize) => {
   });
 
   // Comparaison mot de passe
-  User.prototype.validPassword = async function(password) {
+  User.prototype.validPassword = async function (password) {
     return await bcrypt.compare(password, this.mot_de_passe);
   };
 
 
 
   // Définir la relation avec les tables etablissements et enseignants_disciplines
- User.associate = (models) => {
+  User.associate = (models) => {
     User.belongsTo(models.Etablissement, {
-       foreignKey: 'etablissement_id',
-       as: 'Etablissement'
+      foreignKey: 'etablissement_id',
+      as: 'Etablissement'
     });
     User.belongsToMany(models.Discipline, {
       through: models.EnseignantDiscipline,
@@ -118,9 +124,9 @@ module.exports = (sequelize) => {
       as: 'disciplines'
     });
     User.hasMany(models.EnseignantDiscipline, {
-    foreignKey: 'teacher_id',
-    as: 'EnseignantDisciplines'
-  });
+      foreignKey: 'teacher_id',
+      as: 'EnseignantDisciplines'
+    });
   };
 
   return User;

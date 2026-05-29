@@ -26,7 +26,7 @@ module.exports = (sequelize) => {
     activites: {
       type: DataTypes.TEXT // Sera stocké comme JSON string
     },
-    // ✅ NOUVEAU: État de progression de chaque activité
+    // État de progression de chaque activité
     activites_status: {
       type: DataTypes.JSON,
       defaultValue: {},
@@ -76,7 +76,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       references: { model: 'programmes_theoriques', key: 'id' }
     },
-    // ✅ MODIFIÉ: Calcul automatique basé sur activites_status
+    // Calcul automatique basé sur activites_status
     pourcentage_realise: {
       type: DataTypes.VIRTUAL,
       get() {
@@ -100,14 +100,14 @@ module.exports = (sequelize) => {
         return Math.round((faites / activitesList.length) * 100);
       }
     },
-    // ✅ NOUVEAU: Taux prévu du programme théorique
+    // Taux prévu du programme théorique
     taux_prevu_programme: {
       type: DataTypes.DECIMAL(5, 2),
       defaultValue: 0,
       comment: 'Taux prévu extrait du programme théorique'
     },
 
-     // ✅ NOUVEAUX CHAMPS
+    
     lots_activites_completes: {
       type: DataTypes.JSON,
       allowNull: true,

@@ -1,0 +1,48 @@
+// models/notificationEnvoiAdmin.js
+module.exports = (sequelize, DataTypes) => {
+  const NotificationEnvoiAdmin = sequelize.define('NotificationEnvoiAdmin', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    admin_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'utilisateurs',
+        key: 'id'
+      }
+    },
+    type_envoi: {
+      type: DataTypes.ENUM('tous', 'retard_excessif', 'avance_excessive', 'personnalisé'),
+      allowNull: false
+    },
+    message_personnalise: {
+      type: DataTypes.TEXT
+    },
+    enseignants_cibles: {
+      type: DataTypes.JSON,
+      comment: 'Liste des IDs enseignants ciblés'
+    },
+    nombre_envois: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    }
+  }, {
+    tableName: 'notifications_envois_admin',
+    timestamps: true,
+    underscored: true,
+    createdAt: 'created_at',
+    updatedAt: false
+  });
+
+  NotificationEnvoiAdmin.associate = (models) => {
+    NotificationEnvoiAdmin.belongsTo(models.User, {
+      foreignKey: 'admin_id',
+      as: 'admin'
+    });
+  };
+
+  return NotificationEnvoiAdmin;
+};

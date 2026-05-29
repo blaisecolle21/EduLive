@@ -1,15 +1,15 @@
 const { Sequelize, DataTypes } = require("sequelize");
-const notificationEnvoiAdmin = require("../models/notificationEnvoiAdmin");
 
-const sequelize = new Sequelize('cahier_texte_platform', 'root','', {
+
+const sequelize = new Sequelize('cahiertexte_base', 'Blaise', 'abcolle21', {
     dialect: 'mariadb',
     port: 3306,
-    host : 'localhost',
+    host: 'localhost',
     define: {
         charset: 'utf8mb4', // Encodage UTF-8 pour gérer les caractères spéciaux
         collate: 'utf8mb4_unicode_ci',
     },
-    logging : (msg) => {
+    logging: (msg) => {
         console.log('[SQL]', msg);
     }
 })
@@ -26,12 +26,13 @@ const models = {
     CahierEntryDeleted: require('../models/cahierEntryDeleted')(sequelize, DataTypes),
     CahierEntryHistory: require('../models/cahierEntryHistory')(sequelize, DataTypes),
     Notification: require('../models/notification')(sequelize, DataTypes),
-    NotificationEnvoiAdmin: require('../models/notificationEnvoiAdmin')(sequelize, DataTypes)
+    NotificationEnvoiAdmin: require('../models/notificationEnvoiAdmin')(sequelize, DataTypes),
+    UserModification: require('../models/userModification')(sequelize, DataTypes)
 }
 
 // Configurer les relations
 Object.values(models).forEach(model => {
-  if (model.associate) model.associate(models);
+    if (model.associate) model.associate(models);
 });
 
-module.exports = {sequelize, models};
+module.exports = { sequelize, models };
