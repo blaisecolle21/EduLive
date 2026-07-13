@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const helmet = require('helmet');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { sequelize } = require('./src/config/database');
@@ -8,6 +9,9 @@ const { sequelize } = require('./src/config/database');
 
 const port = 6300;
 const app = express();
+
+// Active les 15 middlewares de sécurité par défaut de Helmet
+app.use(helmet());
 
 
 //Middleware pour lire les JSON

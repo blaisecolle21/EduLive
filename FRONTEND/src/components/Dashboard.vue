@@ -16,78 +16,88 @@
       class="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 z-40 md:hidden"
     ></div>
 
-    <!-- Sidebar -->
-    <aside
-      class="fixed md:fixed top-20 left-0 w-64 bg-white shadow-md h-full transition-transform duration-300 z-50"
-      :class="showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
-    >
-      <!-- Badge utilisateur -->
-      <div class="flex flex-col items-center p-6 border-b animate-fadeIn">
-        <div class="w-16 h-16 rounded-full bg-teal-600 text-white flex items-center justify-center text-2xl font-bold">
-          {{ user.prenoms.charAt(0) }}{{ user.nom.charAt(0) }}
-        </div>
-        <p class="mt-3 font-semibold text-gray-800">{{ user.prenoms }} {{ user.nom }}</p>
-        <p class="text-sm text-gray-500">{{ user.role }}</p>
-      </div>
+    
+          <!-- Sidebar -->
+          <aside
+            class="fixed top-25 left-0 bg-white shadow-xl flex flex-col border-r border-gray-100 transition-all duration-300 z-50"
+            style="height: calc(100vh - 100px); "
+            :class="[
+              isCollapsed ? 'w-20' : 'w-64',
+              showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+            ]"
+          >
+            <!-- Bouton collapse (desktop uniquement) -->
+            <button
+              @click="isCollapsed = !isCollapsed"
+              class="absolute -right-3.5 top-6 bg-teal-600 text-white rounded-full p-1 shadow-lg hover:bg-teal-500 cursor-pointer transition-all duration-300 z-50 hidden md:flex items-center justify-center ring-2 ring-white"
+              :class="{ 'rotate-180': !isCollapsed }"
+              :title="isCollapsed ? 'Agrandir' : 'Réduire'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
 
-      <!-- Menu -->
-      <div class="p-4">
-        <h2 class="text-xl font-bold mb-4 animate-fadeIn">Menu Admin</h2>
-        <ul class="space-y-2">
-          <li class="animate-slideUp delay-100">
-            <button @click="activeSection = 'users'"
-                    :class="{ 'bg-teal-600 text-white': activeSection === 'users' }"
-                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
-              Gestion des utilisateurs
-            </button>
-          </li>
-          <li class="animate-slideUp delay-200">
-            <button @click="activeSection = 'classes'"
-                    :class="{ 'bg-teal-600 text-white': activeSection === 'classes' }"
-                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
-              Gestion des classes
-            </button>
-          </li>
-          <li class="animate-slideUp delay-300">
-            <button @click="activeSection = 'affectations'"
-                    :class="{ 'bg-teal-600 text-white': activeSection === 'affectations' }"
-                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
-              Gestion des affectations
-            </button>
-          </li>
-          <li class="animate-slideUp delay-400">
-            <button @click="activeSection = 'progression'"
-                    :class="{ 'bg-teal-600 text-white': activeSection === 'progression' }"
-                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
-              Progression Globale
-            </button>
-          </li>
-          <li class="animate-slideUp delay-500">
-            <button @click="activeSection = 'consulter-entrees'"
-                    :class="{ 'bg-teal-600 text-white': activeSection === 'consulter-entrees' }"
-                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
-              Consulter les entrées
-            </button>
-          </li>
-          <li class="animate-slideUp delay-600">
-            <button @click="activeSection = 'notifications'"
-                    :class="{ 'bg-teal-600 text-white': activeSection === 'notifications' }"
-                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
-              Notifications
-            </button>
-          </li>
-        </ul>
-      </div>
+            <!-- Header avatar -->
+            <div class="flex items-center gap-3 px-4 py-5 border-b border-gray-100 bg-gradient-to-r from-teal-600 to-teal-500 flex-shrink-0">
+              <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                {{ user.prenoms?.charAt(0) }}{{ user.nom?.charAt(0) }}
+              </div>
+              <transition name="fade">
+                <div v-show="!isCollapsed" class="overflow-hidden">
+                  <p class="font-medium text-white text-sm truncate max-w-[150px]">
+                    {{ user.prenoms }} {{ user.nom }}
+                  </p>
+                  <span class="text-xs text-teal-100 bg-white/20 px-2 py-0.5 rounded-full mt-1 inline-block capitalize">
+                    {{ user.role }}
+                  </span>
+                </div>
+              </transition>
+            </div>
 
-      <!-- Bouton Déconnexion -->
-      <div class="animate-slideUp delay-700">
-        <button @click="logout" class="w-full p-2 rounded bg-black text-white hover:bg-gray-800 cursor-pointer">
-          Déconnexion
-        </button>
-      </div>
-    </aside>
+            <!-- Menu -->
+            <div class="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+              <nav class="px-3 py-4 space-y-1">
+                <transition name="fade">
+                  <p v-show="!isCollapsed"
+                    class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-3">
+                    Menu
+                  </p>
+                </transition>
 
-    <!-- Contenu principal -->
+                <!-- ✅ Un seul menu — supprimer l'ancien <ul> -->
+                <SidebarItem
+                  v-for="item in menuItems"
+                  :key="item.section"
+                  :icon="item.icon"
+                  :label="item.label"
+                  :active="activeSection === item.section"
+                  :collapsed="isCollapsed"
+                  :badge="item.badge"
+                  @click="activeSection = item.section"
+                />
+              </nav>
+            </div>
+
+            <!-- Footer déconnexion -->
+            <div class="px-3 py-4 border-t border-gray-100 flex-shrink-0 mt-auto">
+              <button
+                @click="logout"
+                class="w-full flex items-center gap-3 p-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 group cursor-pointer"
+                :class="isCollapsed ? 'justify-center' : 'px-3'"
+                title="Déconnexion"
+              >
+                <ArrowLeftStartOnRectangleIcon class="h-6 w-6 shrink-0  text-white hover:bg-gray-800 cursor-pointer transition-colors" />
+                <transition name="fade">
+                  <span v-show="!isCollapsed" class="ml-3 text-sm font-medium whitespace-nowrap animate-fadeIn">
+                    Déconnexion
+                  </span>
+                </transition>
+              </button>
+            </div>
+          </aside>
+        <!-- Contenu principal -->
     <div class="flex-1 pt-16 md:ml-80 mt-20 p-4">
       <div class="max-w-5xl mx-auto space-y-6">
 
@@ -113,177 +123,394 @@
       </div> 
       
       <!-- Section Gestion des utilisateurs -->
+
       <div v-if="activeSection === 'users'" class="mt-4">
-        <div class="mb-4">
-          <button @click="$router.push('/register')" class="w-full sm:w-auto bg-teal-500 text-white p-4 rounded hover:bg-green-600 cursor-pointer">
-            Gérer les Inscriptions
-          </button>
-        </div>
-        <button @click="fetchUsers" class="w-full sm:w-auto mt-2 bg-teal-500 text-white p-4 rounded hover:bg-green-600 cursor-pointer">Lister les utilisateurs</button>
-        <div v-if="usersLoaded" class="p-6">
-          <div class="overflow-x-auto">
-            <table v-if="users.length" class="w-full border-collapse border">
-              <thead>
-                <tr class="bg-gray-100">
-                  <th class="border p-2">N°</th>
-                  <th class="border p-2">Nom</th>
-                  <th class="border p-2">Prénoms</th>
-                  <th class="border p-2">Email</th>
-                  <th class="border p-2">Rôle</th>
-                  <th class="border p-2">Établissement</th>
-                  <th class="border p-2">Actif</th>
-                  <th class="border p-2">Dernière connexion</th>
-                  <th class="border p-2">Téléphone</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="u in users" :key="u.id">
-                  <td class="border p-2">{{ u.id }}</td>
-                  <td class="border p-2">{{ u.nom }}</td>
-                  <td class="border p-2">{{ u.prenoms }}</td>
-                  <td class="border p-2">{{ u.email }}</td>
-                  <td class="border p-2">{{ u.role }}</td>
-                  <td class="border p-2">{{ u.etablissement?.nom || 'N/A' }}</td>
-                  <td class="border p-2">
-                    <button
-                      @click="toggleActivation(u)"
-                      :class="u.est_actif ? 'bg-red-600' : 'bg-green-600'"
-                      class="text-white px-3 py-1 rounded cursor-pointer"
-                    >
-                      {{ u.est_actif ? 'Désactiver' : 'Activer' }}
-                    </button>
-                  </td>
-                  <td class="border p-2">{{ formatDate(u.derniere_connexion) }}</td>
-                  <td class="border p-2">{{ u.telephone || 'N/A' }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <p v-else class="mt-4">Aucun utilisateur trouvé.</p>
-          </div>
-        </div>
-        <p v-if="!usersLoaded" class="mt-4">Cliquez sur 'Lister les utilisateurs' pour voir la liste.</p>
+  
+        <!-- Cartes de navigation -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           
-        <!-- Comptes en attentes de validation -->
-        <div class="p-6 mt-8">
-          <h2 class="text-xl font-bold mb-4">Comptes en attente de validation</h2>
-          <div class="overflow-x-auto">
-            <table class="w-full border-collapse border">
-              <thead>
-                <tr class="bg-gray-100">
-                  <th class="border p-2">Nom</th>
-                  <th class="border p-2">Prénoms</th>
-                  <th class="border p-2">Email</th>
-                  <th class="border p-2">Rôle</th>
-                  <th class="border p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="user in pendingUsers" :key="user.id">
-                  <td class="border p-2">{{ user.nom }}</td>
-                  <td class="border p-2">{{ user.prenoms }}</td>
-                  <td class="border p-2">{{ user.email }}</td>
-                  <td class="border p-2">{{ user.role }}</td>
-                  <td class="border p-2">
-                    <button @click="activer(user.id)" class="bg-green-600 text-white px-3 py-1 rounded cursor-pointer">
-                      Activer
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div
+            @click="activeUserTab = 'liste'; fetchUsers()"
+            class="cursor-pointer rounded-xl border-2 p-5 flex flex-col items-center gap-3 transition-all duration-200"
+            :class="activeUserTab === 'liste'
+              ? 'border-teal-600 bg-teal-50 shadow-md'
+              : 'border-gray-200 bg-white hover:border-teal-300 hover:bg-teal-50/50'"
+          >
+            <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                :class="activeUserTab === 'liste' ? 'bg-teal-600' : 'bg-gray-100'">
+              <UserGroupIcon class="h-6 w-6" :class="activeUserTab === 'liste' ? 'text-white' : 'text-gray-500'" />
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold"
+                :class="activeUserTab === 'liste' ? 'text-teal-700' : 'text-gray-700'">
+                Liste des utilisateurs
+              </p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ users.length }} comptes</p>
+            </div>
+            <span v-if="activeUserTab === 'liste'"
+                  class="w-2 h-2 rounded-full bg-teal-600"></span>
           </div>
+
+          <div
+            @click="activeUserTab = 'attente'"
+            class="cursor-pointer rounded-xl border-2 p-5 flex flex-col items-center gap-3 transition-all duration-200"
+            :class="activeUserTab === 'attente'
+              ? 'border-amber-500 bg-amber-50 shadow-md'
+              : 'border-gray-200 bg-white hover:border-amber-300 hover:bg-amber-50/50'"
+          >
+            <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                :class="activeUserTab === 'attente' ? 'bg-amber-500' : 'bg-gray-100'">
+              <ClockIcon class="h-6 w-6" :class="activeUserTab === 'attente' ? 'text-white' : 'text-gray-500'" />
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold"
+                :class="activeUserTab === 'attente' ? 'text-amber-700' : 'text-gray-700'">
+                Comptes en attente
+              </p>
+              <p class="text-xs text-gray-400 mt-0.5">
+                {{ pendingUsers.length }} en attente
+              </p>
+            </div>
+            <span v-if="activeUserTab === 'attente'"
+                  class="w-2 h-2 rounded-full bg-amber-500"></span>
+          </div>
+
+          <div
+            @click="activeUserTab = 'modifications'"
+            class="cursor-pointer rounded-xl border-2 p-5 flex flex-col items-center gap-3 transition-all duration-200"
+            :class="activeUserTab === 'modifications'
+              ? 'border-blue-500 bg-blue-50 shadow-md'
+              : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/50'"
+          >
+            <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                :class="activeUserTab === 'modifications' ? 'bg-blue-500' : 'bg-gray-100'">
+              <PencilSquareIcon class="h-6 w-6" :class="activeUserTab === 'modifications' ? 'text-white' : 'text-gray-500'" />
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold"
+                :class="activeUserTab === 'modifications' ? 'text-blue-700' : 'text-gray-700'">
+                Demandes de modification
+              </p>
+              <p class="text-xs text-gray-400 mt-0.5">
+                {{ modifications.length }} demande(s)
+              </p>
+            </div>
+            <span v-if="activeUserTab === 'modifications'"
+                  class="w-2 h-2 rounded-full bg-blue-500"></span>
+          </div>
+
+          <div
+            @click="$router.push('/register')"
+            class="cursor-pointer rounded-xl border-2 border-gray-200 bg-white hover:border-green-300 hover:bg-green-50/50 p-5 flex flex-col items-center gap-3 transition-all duration-200"
+          >
+            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+              <UserIcon class="h-6 w-6 text-gray-500" />
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold text-gray-700">Gérer les inscriptions</p>
+              <p class="text-xs text-gray-400 mt-0.5">Nouvelle inscription</p>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Modal de modification d'utilisateur -->
-        <div class="p-6">
-          <h2 class="text-xl font-bold mb-4">Demandes de modification en attente</h2>
-          <div class="overflow-x-auto">
-            <table class="w-full border-collapse border">
-              <thead>
-                <tr class="bg-gray-100">
-                  <th class="border p-2">Utilisateur</th>
-                  <th class="border p-2">Champ</th>
-                  <th class="border p-2">Ancienne valeur</th>
-                  <th class="border p-2">Nouvelle valeur</th>
-                  <th class="border p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="modif in modifications" :key="modif.id">
-                  <td class="border p-2">{{ modif.user.nom }} {{ modif.user.prenoms }} {{ modif.user.telephone || 'N/A' }} {{ modif.user.email }}</td>
-                  <td class="border p-2">{{ modif.champ }}</td>
-                  <td class="border p-2">{{ modif.ancienne_valeur }}</td>
-                  <td class="border p-2">{{ modif.nouvelle_valeur }}</td>
-                  <td class="border p-2">
-                    <button @click="valider(modif.id)" class="bg-green-600 text-white px-3 py-1 rounded cursor-pointer">
-                      Valider
-                    </button>
-                    <button @click="refuser(modif.id)" class="bg-red-600 text-white px-3 py-1 rounded ml-2 cursor-pointer">
-                      Refuser
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        <!-- Contenu affiché selon la carte active -->
+
+        <!-- Liste des utilisateurs -->
+        <transition name="fade-slide">
+          <div v-if="activeUserTab === 'liste' && usersLoaded" class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Liste des utilisateurs</h2>
+            <div class="overflow-x-auto">
+              <table v-if="users.length" class="w-full border-collapse">
+                <thead>
+                  <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">N°</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Prénoms</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rôle</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Établissement</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Dernière connexion</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Téléphone</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50 transition-colors">
+                    <td class="p-3 text-sm text-gray-600">{{ u.id }}</td>
+                    <td class="p-3 text-sm font-medium text-gray-800">{{ u.nom }}</td>
+                    <td class="p-3 text-sm text-gray-600">{{ u.prenoms }}</td>
+                    <td class="p-3 text-sm text-gray-600">{{ u.email }}</td>
+                    <td class="p-3">
+                      <span class="text-xs px-2 py-1 rounded-full font-medium"
+                            :class="u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'">
+                        {{ u.role }}
+                      </span>
+                    </td>
+                    <td class="p-3 text-sm text-gray-600">{{ u.Etablissement?.nom || 'N/A' }}</td>
+                    <td class="p-3">
+                      <button
+                        @click="toggleActivation(u)"
+                        class="text-xs px-3 py-1.5 rounded-lg font-medium cursor-pointer transition-colors"
+                        :class="u.est_actif
+                          ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                          : 'bg-green-50 text-green-600 hover:bg-green-100'"
+                      >
+                        {{ u.est_actif ? 'Désactiver' : 'Activer' }}
+                      </button>
+                    </td>
+                    <td class="p-3 text-sm text-gray-600">{{ formatDate(u.derniere_connexion) }}</td>
+                    <td class="p-3 text-sm text-gray-600">{{ u.telephone || 'N/A' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p v-else class="text-gray-500 text-sm py-4">Aucun utilisateur trouvé.</p>
+            </div>
           </div>
-        </div>
+        </transition>
+
+        <!-- Comptes en attente -->
+        <transition name="fade-slide">
+          <div v-if="activeUserTab === 'attente'" class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+              Comptes en attente de validation
+              <span class="ml-2 text-sm bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                {{ pendingUsers.length }}
+              </span>
+            </h2>
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse">
+                <thead>
+                  <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Prénoms</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rôle</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="user in pendingUsers" :key="user.id" class="hover:bg-gray-50 transition-colors">
+                    <td class="p-3 text-sm font-medium text-gray-800">{{ user.nom }}</td>
+                    <td class="p-3 text-sm text-gray-600">{{ user.prenoms }}</td>
+                    <td class="p-3 text-sm text-gray-600">{{ user.email }}</td>
+                    <td class="p-3">
+                      <span class="text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
+                        {{ user.role }}
+                      </span>
+                    </td>
+                    <td class="p-3">
+                      <button @click="activer(user.id)"
+                              class="text-xs px-3 py-1.5 rounded-lg font-medium bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer transition-colors">
+                        Activer
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="pendingUsers.length === 0">
+                    <td colspan="5" class="p-4 text-center text-sm text-gray-400">
+                      Aucun compte en attente.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Demandes de modification -->
+        <transition name="fade-slide">
+          <div v-if="activeUserTab === 'modifications'" class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+              Demandes de modification en attente
+              <span class="ml-2 text-sm bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                {{ modifications.length }}
+              </span>
+            </h2>
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse">
+                <thead>
+                  <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Utilisateur</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Champ</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ancienne valeur</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nouvelle valeur</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="modif in modifications" :key="modif.id" class="hover:bg-gray-50 transition-colors">
+                    <td class="p-3">
+                      <p class="text-sm font-medium text-gray-800">{{ modif.user.nom }} {{ modif.user.prenoms }}</p>
+                      <p class="text-xs text-gray-400">{{ modif.user.email }}</p>
+                    </td>
+                    <td class="p-3 text-sm text-gray-600">{{ modif.champ }}</td>
+                    <td class="p-3 text-sm text-gray-500 line-through">{{ modif.ancienne_valeur }}</td>
+                    <td class="p-3 text-sm font-medium text-gray-800">{{ modif.nouvelle_valeur }}</td>
+                    <td class="p-3 flex gap-2">
+                      <button @click="valider(modif.id)"
+                              class="text-xs px-3 py-1.5 rounded-lg font-medium bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer transition-colors">
+                        Valider
+                      </button>
+                      <button @click="refuser(modif.id)"
+                              class="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer transition-colors">
+                        Refuser
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="modifications.length === 0">
+                    <td colspan="5" class="p-4 text-center text-sm text-gray-400">
+                      Aucune demande en attente.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </transition>
+
       </div>
+
+      
+
+
+
+
 
       <!-- Section Gestion des classes -->
       <div v-if="activeSection === 'classes'" class="mt-4 p-6">
-        <button @click="showAddClass = true" class="w-full sm:w-auto mt-2 bg-green-500 text-white p-2 rounded hover:bg-green-600">Ajouter une classe</button>
-        <div class="overflow-x-auto">
-          <table v-if="classes.length" class="mt-4 w-full border-collapse border">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="border p-2">Nom</th>
-              <th class="border p-2">Promotion</th>
-              <th class="border p-2">Niveau</th>
-              <th class="border p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="classe in classes" :key="classe.id">
-              <td class="border p-2">{{ classe.nom }}</td>
-              <td class="border p-2">{{ classe.promotion }}</td>
-              <td class="border p-2">{{ classe.niveau }}</td>
-              <td class="border p-2">
-                <button @click="editClass(classe)" class="bg-yellow-500 text-white p-1 rounded mr-2">Modifier</button>
-                <button @click="deleteClass(classe.id)" class="bg-red-500 text-white p-1 rounded">Supprimer</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+
+        <!-- Cartes de navigation -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+
+          <div
+            @click="activeClassTab = 'liste'"
+            class="cursor-pointer rounded-xl border-2 p-5 flex flex-col items-center gap-3 transition-all duration-200"
+            :class="activeClassTab === 'liste'
+              ? 'border-teal-600 bg-teal-50 shadow-md'
+              : 'border-gray-200 bg-white hover:border-teal-300 hover:bg-teal-50/50'"
+          >
+            <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                :class="activeClassTab === 'liste' ? 'bg-teal-600' : 'bg-gray-100'">
+              <RectangleGroupIcon class="h-6 w-6"
+                :class="activeClassTab === 'liste' ? 'text-white' : 'text-gray-500'" />
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold"
+                :class="activeClassTab === 'liste' ? 'text-teal-700' : 'text-gray-700'">
+                Liste des classes
+              </p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ classes.length }} classe(s)</p>
+            </div>
+            <span v-if="activeClassTab === 'liste'" class="w-2 h-2 rounded-full bg-teal-600" />
+          </div>
+
+          <div
+            @click="activeClassTab = 'ajouter'; showAddClass = true"
+            class="cursor-pointer rounded-xl border-2 p-5 flex flex-col items-center gap-3 transition-all duration-200"
+            :class="activeClassTab === 'ajouter'
+              ? 'border-green-500 bg-green-50 shadow-md'
+              : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-50/50'"
+          >
+            <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                :class="activeClassTab === 'ajouter' ? 'bg-green-500' : 'bg-gray-100'">
+              <PlusCircleIcon class="h-6 w-6"
+                :class="activeClassTab === 'ajouter' ? 'text-white' : 'text-gray-500'" />
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold"
+                :class="activeClassTab === 'ajouter' ? 'text-green-700' : 'text-gray-700'">
+                Ajouter une classe
+              </p>
+              <p class="text-xs text-gray-400 mt-0.5">Nouvelle classe</p>
+            </div>
+            <span v-if="activeClassTab === 'ajouter'" class="w-2 h-2 rounded-full bg-green-500" />
+          </div>
+
         </div>
 
-        <!-- Modal pour ajouter/modifier une classe -->
-        <div v-if="showAddClass || showEditClass" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-          <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold">{{ showAddClass ? 'Ajouter une classe' : 'Modifier une classe' }}</h3>
-            <form @submit.prevent="showAddClass ? addClass() : updateClass()" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <!-- Liste des classes -->
+        <transition name="fade-slide">
+          <div v-if="activeClassTab === 'liste'" class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Liste des classes</h2>
+            <div class="overflow-x-auto">
+              <table v-if="classes.length" class="w-full border-collapse">
+                <thead>
+                  <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Promotion</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Niveau</th>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="classe in classes" :key="classe.id" class="hover:bg-gray-50 transition-colors">
+                    <td class="p-3 text-sm font-medium text-gray-800">{{ classe.nom }}</td>
+                    <td class="p-3">
+                      <span class="text-xs px-2 py-1 rounded-full bg-teal-100 text-teal-700 font-medium">
+                        {{ classe.promotion }}
+                      </span>
+                    </td>
+                    <td class="p-3 text-sm text-gray-600">{{ classe.niveau }}</td>
+                    <td class="p-3 flex gap-2">
+                      <button @click="editClass(classe)"
+                              class="text-xs px-3 py-1.5 rounded-lg font-medium bg-amber-50 text-amber-600 hover:bg-amber-100 cursor-pointer transition-colors">
+                        Modifier
+                      </button>
+                      <button @click="deleteClass(classe.id)"
+                              class="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer transition-colors">
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p v-else class="text-sm text-gray-400 py-4 text-center">Aucune classe enregistrée.</p>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Formulaire ajouter / modifier -->
+        <transition name="fade-slide">
+          <div v-if="activeClassTab === 'ajouter' || showEditClass" class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+              {{ showEditClass ? 'Modifier la classe' : 'Ajouter une classe' }}
+            </h2>
+            <form @submit.prevent="showEditClass ? updateClass() : addClass()"
+                  class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label for="classNom" class="block text-sm font-medium text-gray-700">Nom :</label>
-                <input v-model="newClass.nom" id="classNom" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required />
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                <input v-model="newClass.nom" type="text" required
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
               </div>
               <div>
-                <label for="classPromotion" class="block text-sm font-medium text-gray-700">Promotion :</label>
-                <select v-model="newClass.promotion" id="classPromotion" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
-                  <option v-for="promo in ['6e', '5e', '4e', '3e', '2nde AB', '2nde C', '2nde D', '1ere AB', '1ere C', '1ere D', 'Tle A1', 'Tle A2-B', 'Tle C', 'Tle D']" :key="promo" :value="promo">{{ promo }}</option>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Promotion</label>
+                <select v-model="newClass.promotion" required
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                  <option value="">Sélectionner</option>
+                  <option v-for="promo in ['6e','5e','4e','3e','2nde AB','2nde C','2nde D','1ere AB','1ere C','1ere D','Tle A1','Tle A2-B','Tle C','Tle D']"
+                          :key="promo" :value="promo">{{ promo }}</option>
                 </select>
               </div>
               <div>
-                <label for="classNiveau" class="block text-sm font-medium text-gray-700">Niveau :</label>
-                <input v-model="newClass.niveau" id="classNiveau" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required />
+                <label class="block text-sm font-medium text-gray-700 mb-1">Niveau</label>
+                <input v-model="newClass.niveau" type="text" required
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
               </div>
-              <div class="flex flex-col sm:flex-row justify-end gap-2 md:col-span-2">
-                <button type="submit" class="w-full sm:w-auto bg-blue-500 text-white p-2 rounded hover:bg-blue-600">{{ showAddClass ? 'Ajouter' : 'Mettre à jour' }}</button>
-                <button @click="cancelClassEdit" class="w-full sm:w-auto bg-gray-500 text-white p-2 rounded hover:bg-gray-600">Annuler</button>
+              <div class="md:col-span-2 flex gap-3 pt-2">
+                <button type="submit"
+                        class="px-5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 cursor-pointer transition-colors">
+                  {{ showEditClass ? 'Mettre à jour' : 'Ajouter' }}
+                </button>
+                <button type="button" @click="cancelClassEdit(); activeClassTab = null"
+                        class="px-5 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-200 cursor-pointer transition-colors">
+                  Annuler
+                </button>
               </div>
             </form>
           </div>
-        </div>
-      </div>
+        </transition>
 
+      </div>
       <!-- Section Gestion des disciplines -->
       <div v-if="activeSection === 'disciplines'" class="mt-4 p-6">
         <button @click="showAddDiscipline = true" class="w-full sm:w-auto mt-2 bg-green-500 text-white p-2 rounded hover:bg-green-600">Ajouter une discipline</button>
@@ -354,184 +581,233 @@
 
       <!-- Section Gestion des affectations -->
       <div v-if="activeSection === 'affectations'" class="mt-4 p-6">
-        <h2 class="text-xl font-semibold mb-4">Gestion des Affectations Enseignants-Matières-Classes</h2>
 
-        <!-- Bouton pour afficher le formulaire de nouvelle affectation -->
-        <div class="mb-4">
-          <button 
-            @click="showNewAffectationForm = !showNewAffectationForm" 
-            class="w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-          >
-            {{ showNewAffectationForm ? 'Masquer' : 'Nouvelle Affectation' }}
-          </button>
-        </div>
+  <!-- Cartes de navigation -->
+  <div class="grid grid-cols-2 gap-4 mb-6">
 
-        <!-- Formulaire d'affectation (affiché conditionnellement) -->
-        <div v-if="showNewAffectationForm" class="bg-white p-6 rounded-lg shadow mb-6">
-          <h3 class="text-lg font-semibold mb-4">Nouvelle Affectation</h3>
-          <form @submit.prevent="createAffectation" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="enseignantId" class="block text-sm font-medium text-gray-700">Enseignant</label>
-              <select v-model="newAffectation.enseignantId" id="enseignantId" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
-                <option value="">Sélectionner un enseignant</option>
-                <option v-for="enseignant in enseignants" :key="enseignant.id" :value="enseignant.id">
-                  {{ enseignant.prenoms }} {{ enseignant.nom }} ({{ enseignant.email }})
-                </option>
-              </select>
-            </div>
-            <div>
-              <label for="classeId" class="block text-sm font-medium text-gray-700">Classe</label>
-              <select v-model="newAffectation.classeId" id="classeId" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
-                <option value="">Sélectionner une classe</option>
-                <option v-for="classe in classes" :key="classe.id" :value="classe.id">
-                  {{ classe.nom }} ({{ classe.promotion }})
-                </option>
-              </select>
-            </div>
-            <div>
-              <label for="disciplineNom" class="block text-sm font-medium text-gray-700">Matière</label>
-              <select v-model="newAffectation.disciplineNom" id="disciplineNom" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
-                <option value="">Sélectionner une matière</option>
-                <option value="PCT">PCT</option>
-                <option value="Mathématiques">Mathématiques</option>
-                <option value="SVT">SVT</option>
-                <option value="Histoire-Géographie">Histoire-Géographie</option>
-                <option value="Français">Français</option>
-                <option value="Anglais">Anglais</option>
-                <option value="Lecture">Lecture</option>
-                <option value="Communication écrite">Communication écrite</option>
-                <option value="Philosophie">Philosophie</option>
-              </select>
-            </div>
-            <div>
-              <label for="coefficient" class="block text-sm font-medium text-gray-700">Coefficient</label>
-              <input v-model.number="newAffectation.coefficient" id="coefficient" type="number" step="0.1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
-            </div>
-            <div>
-              <label for="heuresParSemaine" class="block text-sm font-medium text-gray-700">Heures par semaine</label>
-              <input v-model.number="newAffectation.heuresParSemaine" id="heuresParSemaine" type="number" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
-            </div>
-            <div class="flex flex-col sm:flex-row gap-2 md:col-span-2">
-              <button type="submit" class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Affecter</button>
-              <button type="button" @click="cancelNewAffectation" class="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Annuler</button>
-            </div>
-          </form>
-        </div>
+    <div
+      @click="activeAffectationTab = 'liste'"
+      class="cursor-pointer rounded-xl border-2 p-5 flex flex-col items-center gap-3 transition-all duration-200"
+      :class="activeAffectationTab === 'liste'
+        ? 'border-teal-600 bg-teal-50 shadow-md'
+        : 'border-gray-200 bg-white hover:border-teal-300 hover:bg-teal-50/50'"
+    >
+      <div class="w-12 h-12 rounded-full flex items-center justify-center"
+           :class="activeAffectationTab === 'liste' ? 'bg-teal-600' : 'bg-gray-100'">
+        <LinkIcon class="h-6 w-6"
+          :class="activeAffectationTab === 'liste' ? 'text-white' : 'text-gray-500'" />
+      </div>
+      <div class="text-center">
+        <p class="text-sm font-semibold"
+           :class="activeAffectationTab === 'liste' ? 'text-teal-700' : 'text-gray-700'">
+          Affectations existantes
+        </p>
+        <p class="text-xs text-gray-400 mt-0.5">{{ affectations.length }} affectation(s)</p>
+      </div>
+      <span v-if="activeAffectationTab === 'liste'" class="w-2 h-2 rounded-full bg-teal-600" />
+    </div>
 
-        <!-- Bouton pour afficher la liste des affectations existantes -->
-        <div class="mb-4">
-          <button 
-            @click="showAffectationsList = !showAffectationsList" 
-            class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            {{ showAffectationsList ? 'Masquer' : 'Affectations Existantes' }}
-          </button>
-        </div>
+    <div
+      @click="activeAffectationTab = 'ajouter'; showNewAffectationForm = true"
+      class="cursor-pointer rounded-xl border-2 p-5 flex flex-col items-center gap-3 transition-all duration-200"
+      :class="activeAffectationTab === 'ajouter'
+        ? 'border-green-500 bg-green-50 shadow-md'
+        : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-50/50'"
+    >
+      <div class="w-12 h-12 rounded-full flex items-center justify-center"
+           :class="activeAffectationTab === 'ajouter' ? 'bg-green-500' : 'bg-gray-100'">
+        <PlusIcon class="h-6 w-6"
+          :class="activeAffectationTab === 'ajouter' ? 'text-white' : 'text-gray-500'" />
+      </div>
+      <div class="text-center">
+        <p class="text-sm font-semibold"
+           :class="activeAffectationTab === 'ajouter' ? 'text-green-700' : 'text-gray-700'">
+          Nouvelle affectation
+        </p>
+        <p class="text-xs text-gray-400 mt-0.5">Lier enseignant / classe</p>
+      </div>
+      <span v-if="activeAffectationTab === 'ajouter'" class="w-2 h-2 rounded-full bg-green-500" />
+    </div>
 
-        <!-- Liste des affectations existantes (affichée conditionnellement) -->
-        <div v-if="showAffectationsList" class="bg-white p-6 rounded-lg shadow">
-          <h3 class="text-lg font-semibold mb-4">Liste des Affectations</h3>
-          <div v-if="affectations.length === 0" class="text-gray-500 text-center py-4">
-            Aucune affectation pour le moment
-          </div>
-          <table v-else class="w-full border-collapse border">
-            <thead>
-              <tr class="bg-gray-100">
-                <th class="border p-2">Enseignant</th>
-                <th class="border p-2">Classe</th>
-                <th class="border p-2">Matière</th>
-                <th class="border p-2">Coefficient</th>
-                <th class="border p-2">Heures/semaine</th>
-                <th class="border p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="affectation in affectations" :key="affectation.id" class="hover:bg-gray-50">
-                <!-- ENSEIGNANT -->
-                <td class="border p-2">
-                  <template v-if="editingAffectation === affectation.id">
-                    <select v-model="editAffectationForm.enseignantId" class="border rounded p-1 w-full">
-                      <option v-for="e in enseignants" :key="e.id" :value="e.id">
-                        {{ e.prenoms }} {{ e.nom }}
-                      </option>
-                    </select>
-                  </template>
-                  <template v-else>
-                    {{ affectation.User?.prenoms }} {{ affectation.User?.nom }}
-                  </template>
-                </td>
+  </div>
 
-                <!-- CLASSE -->
-                <td class="border p-2">
-                  <template v-if="editingAffectation === affectation.id">
-                    <select v-model="editAffectationForm.classeId" class="border rounded p-1 w-full">
-                      <option v-for="c in classes" :key="c.id" :value="c.id">
-                        {{ c.nom }} ({{ c.promotion }})
-                      </option>
-                    </select>
-                  </template>
-                  <template v-else>
+  <!-- Liste des affectations -->
+  <transition name="fade-slide">
+    <div v-if="activeAffectationTab === 'liste'" class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Liste des affectations</h2>
+      <div v-if="affectations.length === 0" class="text-center text-sm text-gray-400 py-4">
+        Aucune affectation pour le moment.
+      </div>
+      <div v-else class="overflow-x-auto">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Enseignant</th>
+              <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Classe</th>
+              <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Matière</th>
+              <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Coefficient</th>
+              <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">H/semaine</th>
+              <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr v-for="affectation in affectations" :key="affectation.id" class="hover:bg-gray-50 transition-colors">
+
+              <td class="p-3 text-sm">
+                <template v-if="editingAffectation === affectation.id">
+                  <select v-model="editAffectationForm.enseignantId"
+                          class="border border-gray-300 rounded-lg px-2 py-1 text-sm w-full">
+                    <option v-for="e in enseignants" :key="e.id" :value="e.id">
+                      {{ e.prenoms }} {{ e.nom }}
+                    </option>
+                  </select>
+                </template>
+                <template v-else>
+                  <p class="font-medium text-gray-800">{{ affectation.User?.prenoms }} {{ affectation.User?.nom }}</p>
+                </template>
+              </td>
+
+              <td class="p-3 text-sm">
+                <template v-if="editingAffectation === affectation.id">
+                  <select v-model="editAffectationForm.classeId"
+                          class="border border-gray-300 rounded-lg px-2 py-1 text-sm w-full">
+                    <option v-for="c in classes" :key="c.id" :value="c.id">
+                      {{ c.nom }} ({{ c.promotion }})
+                    </option>
+                  </select>
+                </template>
+                <template v-else>
+                  <span class="text-xs px-2 py-1 rounded-full bg-teal-100 text-teal-700 font-medium">
                     {{ affectation.Discipline?.Classe?.nom }} ({{ affectation.Discipline?.Classe?.promotion }})
-                  </template>
-                </td>
+                  </span>
+                </template>
+              </td>
 
-                <!-- MATIÈRE -->
-                <td class="border p-2">
-                  <template v-if="editingAffectation === affectation.id">
-                    <select v-model="editAffectationForm.disciplineNom" class="border rounded p-1 w-full">
-                      <option v-for="m in matieresDisponibles" :key="m" :value="m">{{ m }}</option>
-                    </select>
-                  </template>
-                  <template v-else>
-                    {{ affectation.Discipline?.nom }}
-                  </template>
-                </td>
+              <td class="p-3 text-sm">
+                <template v-if="editingAffectation === affectation.id">
+                  <select v-model="editAffectationForm.disciplineNom"
+                          class="border border-gray-300 rounded-lg px-2 py-1 text-sm w-full">
+                    <option v-for="m in matieresDisponibles" :key="m" :value="m">{{ m }}</option>
+                  </select>
+                </template>
+                <template v-else>
+                  {{ affectation.Discipline?.nom }}
+                </template>
+              </td>
 
-                <!-- COEFFICIENT -->
-                <td class="border p-2">
-                  <template v-if="editingAffectation === affectation.id">
-                    <input v-model.number="editAffectationForm.coefficient" type="number" step="0.1" class="border rounded p-1 w-20" />
-                  </template>
-                  <template v-else>
-                    {{ affectation.Discipline?.coefficient }}
-                  </template>
-                </td>
+              <td class="p-3 text-sm text-gray-600">
+                <template v-if="editingAffectation === affectation.id">
+                  <input v-model.number="editAffectationForm.coefficient" type="number" step="0.1"
+                         class="border border-gray-300 rounded-lg px-2 py-1 text-sm w-20" />
+                </template>
+                <template v-else>
+                  {{ affectation.Discipline?.coefficient }}
+                </template>
+              </td>
 
-                <!-- HEURES/SEM -->
-                <td class="border p-2">
-                  <template v-if="editingAffectation === affectation.id">
-                    <input v-model.number="editAffectationForm.heuresParSemaine" type="number" class="border rounded p-1 w-20" />
-                  </template>
-                  <template v-else>
-                    {{ affectation.Discipline?.heures_par_semaine }}
-                  </template>
-                </td>
+              <td class="p-3 text-sm text-gray-600">
+                <template v-if="editingAffectation === affectation.id">
+                  <input v-model.number="editAffectationForm.heuresParSemaine" type="number"
+                         class="border border-gray-300 rounded-lg px-2 py-1 text-sm w-20" />
+                </template>
+                <template v-else>
+                  {{ affectation.Discipline?.heures_par_semaine }}h
+                </template>
+              </td>
 
-                <!-- ACTIONS -->
-                <td class="border p-2">
-                  <template v-if="editingAffectation === affectation.id">
-                    <button @click="updateAffectation(affectation)" class="bg-green-500 text-white p-1 rounded mr-1 text-xs hover:bg-green-600">
+              <td class="p-3">
+                <template v-if="editingAffectation === affectation.id">
+                  <div class="flex gap-2">
+                    <button @click="updateAffectation(affectation)"
+                            class="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer transition-colors font-medium">
                       Sauvegarder
                     </button>
-                    <button @click="cancelEdit" class="bg-gray-500 text-white p-1 rounded text-xs hover:bg-gray-600">
+                    <button @click="cancelEdit"
+                            class="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer transition-colors font-medium">
                       Annuler
                     </button>
-                  </template>
-                  <template v-else>
-                    <button @click="startEditAffectation(affectation)" class="bg-yellow-500 text-white p-1 rounded mr-1 text-xs hover:bg-yellow-600">
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="flex gap-2">
+                    <button @click="startEditAffectation(affectation)"
+                            class="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 cursor-pointer transition-colors font-medium">
                       Modifier
                     </button>
-                    <button @click="deleteAffectation(affectation.id)" class="bg-red-500 text-white p-1 rounded text-xs hover:bg-red-600">
+                    <button @click="deleteAffectation(affectation.id)"
+                            class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer transition-colors font-medium">
                       Supprimer
                     </button>
-                  </template>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  </div>
+                </template>
+              </td>
 
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </transition>
+
+  <!-- Formulaire nouvelle affectation -->
+  <transition name="fade-slide">
+    <div v-if="activeAffectationTab === 'ajouter'" class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Nouvelle affectation</h2>
+      <form @submit.prevent="createAffectation" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Enseignant</label>
+          <select v-model="newAffectation.enseignantId" required
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="">Sélectionner un enseignant</option>
+            <option v-for="enseignant in enseignants" :key="enseignant.id" :value="enseignant.id">
+              {{ enseignant.prenoms }} {{ enseignant.nom }} ({{ enseignant.email }})
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Classe</label>
+          <select v-model="newAffectation.classeId" required
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="">Sélectionner une classe</option>
+            <option v-for="classe in classes" :key="classe.id" :value="classe.id">
+              {{ classe.nom }} ({{ classe.promotion }})
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Matière</label>
+          <select v-model="newAffectation.disciplineNom" required
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="">Sélectionner une matière</option>
+            <option v-for="m in ['PCT','Mathématiques','SVT','Histoire-Géographie','Français','Anglais','Lecture','Communication écrite','Philosophie']"
+                    :key="m" :value="m">{{ m }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Coefficient</label>
+          <input v-model.number="newAffectation.coefficient" type="number" step="0.1"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Heures par semaine</label>
+          <input v-model.number="newAffectation.heuresParSemaine" type="number"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+        </div>
+        <div class="md:col-span-2 flex gap-3 pt-2">
+          <button type="submit"
+                  class="px-5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 cursor-pointer transition-colors">
+            Affecter
+          </button>
+          <button type="button" @click="cancelNewAffectation(); activeAffectationTab = null"
+                  class="px-5 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-200 cursor-pointer transition-colors">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </transition>
+
+</div>
 
 
       <!-- Section Progression Globale -->
@@ -1292,16 +1568,48 @@
 <script>
 import api from '../api';
 
+import SidebarItem from './SidebarItem.vue';
+
 import { startSessionTimer, stopSessionTimer } from '../utils/session';
+
+import { 
+  UsersIcon, 
+  AcademicCapIcon, 
+  UserPlusIcon, 
+  ChartBarIcon, 
+  ClipboardDocumentListIcon, 
+  BellIcon,
+  ArrowLeftStartOnRectangleIcon,
+  ClockIcon,           // ← pour "en attente"
+  PencilSquareIcon,
+  UserGroupIcon,
+  UserIcon,
+  PlusCircleIcon,
+  RectangleGroupIcon,
+  LinkIcon,
+  PlusIcon
+} from '@heroicons/vue/24/outline'
 
 
 export default {
   name: 'AdminNotifications',
 
+  components: {
+    SidebarItem,
+    ArrowLeftStartOnRectangleIcon,
+    ClockIcon,
+    PencilSquareIcon,
+    UserGroupIcon,
+    UserIcon,
+    PlusCircleIcon,
+    RectangleGroupIcon,
+    LinkIcon,
+    PlusIcon
+  },
 
   data() {
     return {
-      user: { nom: '', prenoms: '', role: '' },
+      user: JSON.parse(localStorage.getItem('user')) || {nom: '', prenoms: '', role: ''},
       users: [],
       pendingUsers: [],
       editingUser: null,
@@ -1313,7 +1621,27 @@ export default {
       importSuccess: false,
       classes: [],
       disciplines: [],
-      showSidebar: false,
+      
+      activeClassTab: null,
+      activeAffectationTab: null,
+      activeUserTab: null,  // null = aucun tableau affiché par défaut
+
+      isCollapsed: false,
+      showSidebar: window.innerWidth >= 768,
+      activeSection: 'accueil',
+      
+
+      // ✅ Définition centralisée du menu
+      menuItems: [
+        { section: 'users',            label: 'Gestion des utilisateurs', icon: UsersIcon,                badge: null },
+        { section: 'classes',          label: 'Gestion des classes',      icon: AcademicCapIcon,          badge: null },
+        { section: 'affectations',     label: 'Gestion des affectations', icon: UserPlusIcon,             badge: null },
+        { section: 'progression',      label: 'Progression globale',      icon: ChartBarIcon,             badge: null },
+        { section: 'consulter-entrees',label: 'Consulter les entrées',    icon: ClipboardDocumentListIcon,badge: null },
+        { section: 'notifications',    label: 'Notifications',            icon: BellIcon,                 badge: null },
+      ],
+
+
       showAddClass: false,
       showEditClass: false,
       newClass: { nom: '', promotion: '6e', niveau: '' },
@@ -1335,7 +1663,7 @@ export default {
       showHistory: {},
       showDeleted: false,
       progressionLoading: false,
-      activeSection: 'users',
+     // activeSection: 'users',
       // DONNÉES pour consulter les entrées
       filtreEntreesClasse: '',
       filtreEntreesDiscipline: '',
@@ -2185,6 +2513,16 @@ export default {
     typing 4s steps(40, end),
     blink .75s step-end infinite,
     hideCursor 0s linear 4s forwards;
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 

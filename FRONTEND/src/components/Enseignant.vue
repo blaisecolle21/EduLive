@@ -21,60 +21,85 @@
     ></div>
 
     <!-- Sidebar -->
+    
+
     <aside
-      class="fixed md:fixed top-20 left-0 w-64 bg-white shadow-md h-full transition-transform duration-300 z-50"
-      :class="showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
-    >
-      <!-- Badge utilisateur -->
-      <div class="flex flex-col items-center p-6 border-b animate-fadeIn">
-        <div class="w-16 h-16 rounded-full bg-teal-600 text-white flex items-center justify-center text-2xl font-bold">
-          {{ user.prenoms.charAt(0) }}{{ user.nom.charAt(0) }}
+            class="fixed top-25 left-0 bg-white shadow-xl flex flex-col border-r border-gray-100 transition-all duration-300 z-50"
+            style="height: calc(100vh - 100px); "
+            :class="[
+              isCollapsed ? 'w-20' : 'w-64',
+              showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+            ]"
+          >
+            <!-- Bouton collapse (desktop uniquement) -->
+            <button
+              @click="isCollapsed = !isCollapsed"
+              class="absolute -right-3.5 top-6 bg-teal-600 text-white rounded-full p-1 shadow-lg hover:bg-teal-500 cursor-pointer transition-all duration-300 z-50 hidden md:flex items-center justify-center ring-2 ring-white"
+              :class="{ 'rotate-180': !isCollapsed }"
+              :title="isCollapsed ? 'Agrandir' : 'Réduire'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+
+            <!-- Header avatar -->
+            <div class="flex items-center gap-3 px-4 py-5 border-b border-gray-100 bg-gradient-to-r from-teal-600 to-teal-500 flex-shrink-0">
+              <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                {{ user.prenoms?.charAt(0) }}{{ user.nom?.charAt(0) }}
+              </div>
+              <transition name="fade">
+                <div v-show="!isCollapsed" class="overflow-hidden">
+                  <p class="font-medium text-white text-sm truncate max-w-[150px]">
+                    {{ user.prenoms }} {{ user.nom }}
+                  </p>
+                  <span class="text-xs text-teal-100 bg-white/20 px-2 py-0.5 rounded-full mt-1 inline-block capitalize">
+                    {{ user.role }}
+                  </span>
+                </div>
+              </transition>
+            </div>
+
+            <!-- Menu -->
+            <div class="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+              <nav class="px-3 py-4 space-y-1">
+                <transition name="fade">
+                  <p v-show="!isCollapsed"
+                    class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-3">
+                    Menu
+                  </p>
+                </transition>
+
+                <!-- Un seul menu  -->
+                <SidebarItem
+                  v-for="item in menuItems"
+                  :key="item.section"
+                  :icon="item.icon"
+                  :label="item.label"
+                  :active="activeSection === item.section"
+                  :collapsed="isCollapsed"
+                  :badge="item.badge"
+                  @click="activeSection = item.section"
+                />
+              </nav>
+            </div>
+      <!-- Footer déconnexion -->
+        <div class="px-3 py-4 border-t border-gray-100 flex-shrink-0 mt-auto">
+          <button
+            @click="logout"
+            class="w-full flex items-center gap-3 p-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 group cursor-pointer"
+            :class="isCollapsed ? 'justify-center' : 'px-3'"
+            title="Déconnexion"
+          >
+            <ArrowLeftStartOnRectangleIcon class="h-6 w-6 shrink-0  text-white hover:bg-gray-800 cursor-pointer transition-colors" />
+            <transition name="fade">
+              <span v-show="!isCollapsed" class="ml-3 text-sm font-medium whitespace-nowrap animate-fadeIn">
+                Déconnexion
+              </span>
+            </transition>
+          </button>
         </div>
-        <p class="mt-3 font-semibold text-gray-800">{{ user.prenoms }} {{ user.nom }}</p>
-        <p class="text-sm text-gray-500">{{ user.role }}</p>
-      </div>
-
-      <!-- Menu -->
-      <div class="p-4">
-        <h2 class="text-xl font-bold mb-4 animate-fadeIn">Menu</h2>
-        <ul class="space-y-2">
-          <li class="animate-slideUp delay-100">
-            <button @click="activeSection = 'mes-classes'"
-                    :class="{ 'bg-teal-600 text-white': activeSection === 'mes-classes' }"
-                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
-               Mes Classes
-            </button>
-          </li>
-          <li class="animate-slideUp delay-200">
-            <button @click="activeSection = 'progression'"
-                    :class="{ 'bg-teal-600 text-white': activeSection === 'progression' }"
-                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
-               Progression
-            </button>
-          </li>
-          <li class="animate-slideUp delay-300">
-            <button @click="activeSection = 'notification'"
-                    :class="{ 'bg-teal-600 text-white': activeSection === 'notification' }"
-                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
-               Notifications
-            </button>
-          </li>
-          <li class="animate-slideUp delay-400">
-            <button @click="activeSection = 'infos-personnelles'"
-                    :class="{ 'bg-teal-600 text-white': activeSection === 'infos-personnelles' }"
-                    class="w-full p-2 rounded hover:bg-teal-500 cursor-pointer">
-               Mes Informations
-            </button>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Bouton Déconnexion -->
-      <div class=" animate-slideUp delay-500">
-        <button @click="logout" class="w-full p-2 rounded bg-black text-white hover:bg-gray-800 cursor-pointer">
-           Déconnexion
-        </button>
-      </div>
     </aside>
 
     <!-- Contenu principal -->
@@ -937,42 +962,187 @@
   </div>
 </div>
 
-  <div v-if="activeSection === 'infos-personnelles'" class="max-w-5xl mx-auto space-y-6">
-    <div class="mt-4 p-6 bg-white rounded-lg shadow">
-      <h2 class="text-2xl font-bold mb-4">Mes Informations</h2>
-      <div v-if="user" class="p-6 space-y-3">
-         <p><strong>Nom :</strong> {{ user.nom }}</p>
-         <p><strong>Prénoms :</strong> {{ user.prenoms }}</p>
-         <p><strong>Email :</strong> {{ user.email }}</p>
-         <p><strong>Téléphone :</strong> {{ user.telephone }}</p>
-         <p><strong>Établissement :</strong> {{ user.etablissement_id }}</p>
-         <p><strong>Rôle :</strong> {{ user.role }}</p>
+
+      <!-- Section Profil -->
+
+        <div v-if="activeSection === 'infos-personnelles'" class="mt-4 p-6">
+
+        <!-- Cartes de navigation -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+
+          <div
+            @click="activeProfilTab = 'voir'"
+            class="cursor-pointer rounded-xl border-2 p-5 flex flex-col items-center gap-3 transition-all duration-200"
+            :class="activeProfilTab === 'voir'
+              ? 'border-teal-600 bg-teal-50 shadow-md'
+              : 'border-gray-200 bg-white hover:border-teal-300 hover:bg-teal-50/50'"
+          >
+            <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                :class="activeProfilTab === 'voir' ? 'bg-teal-600' : 'bg-gray-100'">
+              <UserCircleIcon class="h-6 w-6"
+                :class="activeProfilTab === 'voir' ? 'text-white' : 'text-gray-500'" />
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold"
+                :class="activeProfilTab === 'voir' ? 'text-teal-700' : 'text-gray-700'">
+                Mes informations
+              </p>
+              <p class="text-xs text-gray-400 mt-0.5">Voir mon profil</p>
+            </div>
+            <span v-if="activeProfilTab === 'voir'" class="w-2 h-2 rounded-full bg-teal-600" />
+          </div>
+
+          <div
+            @click="activeProfilTab = 'modifier'"
+            class="cursor-pointer rounded-xl border-2 p-5 flex flex-col items-center gap-3 transition-all duration-200"
+            :class="activeProfilTab === 'modifier'
+              ? 'border-blue-500 bg-blue-50 shadow-md'
+              : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/50'"
+          >
+            <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                :class="activeProfilTab === 'modifier' ? 'bg-blue-500' : 'bg-gray-100'">
+              <PencilSquareIcon class="h-6 w-6"
+                :class="activeProfilTab === 'modifier' ? 'text-white' : 'text-gray-500'" />
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold"
+                :class="activeProfilTab === 'modifier' ? 'text-blue-700' : 'text-gray-700'">
+                Modifier mon profil
+              </p>
+              <p class="text-xs text-gray-400 mt-0.5">Proposer une modification</p>
+            </div>
+            <span v-if="activeProfilTab === 'modifier'" class="w-2 h-2 rounded-full bg-blue-500" />
+          </div>
+
+        </div>
+
+        <!-- Voir mes informations -->
+        <transition name="fade-slide">
+          <div v-if="activeProfilTab === 'voir'" class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+              <div class="w-16 h-16 rounded-full bg-teal-600 text-white flex items-center justify-center text-xl font-bold shrink-0">
+                {{ user.prenoms?.charAt(0) }}{{ user.nom?.charAt(0) }}
+              </div>
+              <div>
+                <p class="text-lg font-semibold text-gray-800">{{ user.prenoms }} {{ user.nom }}</p>
+                <span class="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-medium capitalize">
+                  {{ user.role }}
+                </span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <div class="w-9 h-9 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+                  <UserIcon class="h-5 w-5 text-teal-600" />
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 font-medium">Nom</p>
+                  <p class="text-sm font-semibold text-gray-800">{{ user.nom || '—' }}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <div class="w-9 h-9 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+                  <UserIcon class="h-5 w-5 text-teal-600" />
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 font-medium">Prénoms</p>
+                  <p class="text-sm font-semibold text-gray-800">{{ user.prenoms || '—' }}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <div class="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                  <EnvelopeIcon class="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 font-medium">Email</p>
+                  <p class="text-sm font-semibold text-gray-800">{{ user.email || '—' }}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <div class="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                  <PhoneIcon class="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 font-medium">Téléphone</p>
+                  <p class="text-sm font-semibold text-gray-800">{{ user.telephone || '—' }}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl md:col-span-2">
+                <div class="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
+                  <BuildingOfficeIcon class="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 font-medium">Établissement</p>
+                  <p class="text-sm font-semibold text-gray-800">{{ user.etablissement_id || '—' }}</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </transition>
+
+        <!-- Modifier mon profil -->
+        <transition name="fade-slide">
+          <div v-if="activeProfilTab === 'modifier'" class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-1">Proposer une modification</h2>
+            <p class="text-sm text-gray-400 mb-6">
+              Vos modifications seront soumises à validation par l'administrateur avant d'être appliquées.
+            </p>
+
+            <form @submit.prevent="proposerModification" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                <input v-model="nouveauNom" type="text"
+                      :placeholder="user.nom"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Prénoms</label>
+                <input v-model="nouveauxPrenoms" type="text"
+                      :placeholder="user.prenoms"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input v-model="nouvelEmail" type="email"
+                      :placeholder="user.email"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                <input v-model="nouveauTel" type="text"
+                      :placeholder="user.telephone || 'Votre numéro'"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+
+              <div class="md:col-span-2 flex gap-3 pt-2">
+                <button type="submit"
+                        class="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
+                  Envoyer la demande
+                </button>
+                <button type="button" @click="activeProfilTab = null"
+                        class="px-5 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-200 cursor-pointer transition-colors">
+                  Annuler
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </transition>
+
       </div>
-    </div>
 
-    <h3 class="mt-6 font-semibold">Proposer une modification</h3>
-    <form @submit.prevent="proposerModification">
 
-      <label>Nom</label>
-      <input v-model="nouveauNom" class="border p-2 w-full" type="text" />
-
-      <label>Prénoms</label>
-      <input v-model="nouveauxPrenoms" class="border p-2 w-full" type="text" />
-
-      <label>Email</label>
-      <input v-model="nouvelEmail" class="border p-2 w-full" type="email" />
-
-      <label>Téléphone</label>
-      <input v-model="nouveauTel" class="border p-2 w-full" type="text" />
-
-      <button class="mt-4 w-full sm:w-auto bg-teal-600 text-white px-4 py-2 rounded hover:bg-green-700 transition cursor-pointer">
-        Envoyer la demande
-      </button>
-    </form>
-
-  </div>
-
-<!-- <button @click="logout" class="mt-4 bg-red-500 text-white p-2 rounded hover:bg-red-600">Déconnexion</button> -->
 </div>
 </div>
 </template>
@@ -985,7 +1155,20 @@ import MenuBar from './MenuBar.vue';
 // import '../assets/animations.css';
 import { startSessionTimer, stopSessionTimer } from '../utils/session';
 
+import SidebarItem from './SidebarItem.vue';
 
+import { 
+  UserCircleIcon,
+  BookOpenIcon, 
+  ChartBarIcon, 
+  BellIcon,
+  ArrowLeftStartOnRectangleIcon,
+  UserIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  BuildingOfficeIcon,
+  PencilSquareIcon 
+} from '@heroicons/vue/24/outline'
 
 
 
@@ -993,12 +1176,22 @@ export default {
   name: 'NotificationsEnseignant',
   components: {
     EditorContent,
-    MenuBar
+    MenuBar,
+    SidebarItem,
+    ArrowLeftStartOnRectangleIcon,
+    UserCircleIcon,
+    BookOpenIcon,
+    ChartBarIcon,
+    BellIcon,
+    UserIcon,
+    EnvelopeIcon,
+    PhoneIcon,
+    BuildingOfficeIcon,
+    PencilSquareIcon 
   },
   data() {
     return {
-      showSidebar: false,
-      user: null,
+      user: JSON.parse(localStorage.getItem('user')) || {nom: '', prenoms: '', role: ''},
       modifications: [],
       nouveauNom: '',
       nouveauxPrenoms: '',
@@ -1035,7 +1228,22 @@ export default {
       showHistoryModal: false,
       historyEntryId: null,
       loadingClasses: false,
+
+      activeProfilTab: null,
+
+      isCollapsed: false,
+      showSidebar: window.innerWidth >= 768,
       activeSection: 'accueil',
+
+      menuItems: [
+        { section: 'mes-classes',       label: 'Mes Classes',         icon: BookOpenIcon,    badge: null },
+        { section: 'progression',       label: 'Progression',         icon: ChartBarIcon,    badge: null },
+        { section: 'notification',      label: 'Notifications',       icon: BellIcon,        badge: null },
+        { section: 'infos-personnelles',label: 'Profil',             icon: UserCircleIcon,  badge: null },
+      ],
+
+
+
       editor: null,
       activitesStatus: {}, // Format: { "activite_text": "en_cours" | "fait" }
       progressionGlobale: 0,
