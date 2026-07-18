@@ -7,24 +7,38 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const { sequelize } = require("./src/config/database");
 
-const port = 6300;
+const port = process.env.PORT || 6300; //  dynamique pour Railway
 const app = express();
 
-// Dis à Express de faire confiance aux en-têtes X-Forwarded-For transmis par Nginx
 app.set("trust proxy", 1);
 
-// Active les 15 middlewares de sécurité par défaut de Helmet
 app.use(helmet());
 
-//Middleware pour lire les JSON
-app.use(cors({ origin: "http://localhost:5173" }));
-app.use(express.json()); // indispensable
+//  CORS dynamique — accepte le frontend en prod ET localhost en dev
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL, // ex: https://ton-projet.vercel.app
+].filter(Boolean); // retire les valeurs undefined si FRONTEND_URL n'est pas encore défini
 
-//Limiteur Global (Assez large)
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // autorise aussi les requêtes sans origin (ex: Postman, health checks)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Non autorisé par CORS"));
+      }
+    },
+    credentials: true,
+  }),
+);
+
+app.use(express.json());
 
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 150, // Limite chaque IP à 150 requêtes par fenêtre
+  windowMs: 15 * 60 * 1000,
+  max: 150,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -32,17 +46,18 @@ const globalLimiter = rateLimit({
       "Trop de requêtes sur l'ensemble de l'application. Ralentissez un peu.",
   },
 });
-
 app.use(globalLimiter);
 
-//// Middleware pour logs de requêtes simples
 app.use((req, res, next) => {
   console.log(`🚀 Requête reçue : ${req.method} ${req.url}`);
   console.log("📦 req.body =", req.body);
   next();
 });
 
-// Routes
+app.get("/api/health", (req, res) =>
+  res.json({ status: "ok", timestamp: Date.now() }),
+);
+
 app.use("/api/auth", require("./src/routes/auth"));
 app.use("/api/users", require("./src/routes/users"));
 app.use("/api/programs", require("./src/routes/programs"));
@@ -56,12 +71,10 @@ async function aunthenticateDb() {
   try {
     await sequelize.authenticate();
     console.log("✅ Connexion à MariaDB réussie !");
-
-    // Synchronisation des modèles
     await sequelize.sync({ alter: false });
     console.log("✅ Modèles synchronisés avec succès !");
   } catch (error) {
-    console.log("❌Impossible de se conecter à MariaDB!");
+    console.log("❌ Impossible de se connecter à MariaDB!");
     console.log(error);
   }
 }
@@ -69,7 +82,6 @@ async function aunthenticateDb() {
 app.use(bodyParser.json());
 aunthenticateDb();
 
-// Capture de toutes les erreurs non attrapées
 process.on("uncaughtException", (err) => {
   console.error("❌ Exception non attrapée :", err.stack);
 });
@@ -78,18 +90,15 @@ process.on("unhandledRejection", (reason) => {
   console.error("❌ Rejet de promesse non géré :", reason.stack || reason);
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Serveur démarré sur http://localhost:${port}`);
-});
-
-// Middleware global de gestion des erreurs ( 4 arguments)
+// ✅ Middleware d'erreurs doit etre  AVANT app.listen()
 app.use((err, req, res, next) => {
-  //  On log l'erreur complète sur le serveur Ubuntu (Détails visibles uniquement par le développeur)
   console.error("--- ERREUR SERVEUR ---");
   console.error(err);
-
-  // 2. On masque les détails internes et on envoie un message propre au client
   res.status(500).json({
     message: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
   });
+});
+
+app.listen(port, () => {
+  console.log(`🚀 Serveur démarré sur le port ${port}`);
 });

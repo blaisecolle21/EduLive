@@ -1,10 +1,11 @@
 <script setup>
-const name = 'Edulive'
+import OfflineBanner from "./components/OfflineBanner.vue";
+
+const name = "Edulive";
 </script>
 
 <template>
-  
-  
+  <OfflineBanner />
   <router-view></router-view>
 </template>
 
