@@ -6,7 +6,7 @@
       active
         ? 'bg-teal-600 text-white shadow-sm'
         : 'text-gray-500 hover:bg-teal-50 hover:text-teal-700',
-      collapsed ? 'justify-center px-2' : 'px-3'
+      collapsed ? 'justify-center px-2' : 'px-3',
     ]"
     :title="collapsed ? label : ''"
   >
@@ -41,28 +41,28 @@
 
 <script>
 export default {
-  name: 'SidebarItem',
+  name: "SidebarItem",
   props: {
     icon: { type: [Object, Function], required: true },
     label: { type: String, required: true },
     active: { type: Boolean, default: false },
     collapsed: { type: Boolean, default: false },
-    badge: { default: null }
+    badge: { type: [String, Number], default: null },
   },
-  emits: ['click']
-}
+  emits: ["click"],
+};
 </script>
 
 <style scoped>
-
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
   transform: translateX(-6px);
 }
-
 </style>

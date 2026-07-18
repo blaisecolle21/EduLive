@@ -7,106 +7,145 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const emailService = require("../services/emailService");
+const rateLimit = require("express-rate-limit");
 
-// Route d'inscription
+// Route d'inscription publique (accessible à tous)
 router.post("/register", async (req, res) => {
   try {
-    const {
-      nom,
-      prenoms,
-      email,
-      mot_de_passe,
-      role,
-      etablissement_id,
-      telephone,
-    } = req.body;
+    const { nom, prenoms, email, mot_de_passe, etablissement_id, telephone } =
+      req.body;
+    // ⚠️ role_id n'est plus extrait de req.body — il est fixé côté serveur
 
-    // Vérifier si l'utilisateur existe déjà
     const existingUser = await models.User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: "Cet email est déjà utilisé." });
     }
 
-    // Créer l'utilisateur (mot_de_passe sera hashé via le hook)
+    const ROLE_ENSEIGNANT_ID = 2; // seul rôle autorisé via inscription publique
+
     const user = await models.User.create({
       nom,
       prenoms,
       email,
       mot_de_passe,
-      role,
+      role_id: ROLE_ENSEIGNANT_ID, // ✅ toujours forcé, jamais depuis req.body
       etablissement_id,
       telephone,
-      est_actif: false, // Par défaut, l'utilisateur n'est pas actif
+      est_actif: false,
     });
 
     res.status(201).json({
-      message: "Utilisateur créé avec succès",
-      user: { id: user.id, email: user.email, role: user.role },
+      message:
+        "Demande d'inscription enregistrée. En attente de validation par l'administrateur.",
+      user: { id: user.id, email: user.email, role_id: user.role_id },
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("❌ Erreur inscription:", error);
+    res.status(400).json({
+      error: "Erreur lors de l'inscription. Vérifiez vos informations.",
+    });
   }
 });
 
-// Route de connexion
-router.post("/login", async (req, res) => {
-  console.log("req.body:", req.body); // Débogage
-
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: "Trop de tentatives de connexion. Veuillez réessayer plus tard.",
+  },
+});
+// ==========================================
+// 2. ROUTE DE CONNEXION (DISTRIBUTION RBAC)
+// ==========================================
+router.post("/login", loginLimiter, async (req, res) => {
   try {
     const { email, mot_de_passe, rememberMe } = req.body;
 
-    // Trouver l'utilisateur
-    const user = await models.User.findOne({ where: { email } });
+    // Trouver l'utilisateur EN INCLUANT son Rôle et ses Permissions
+    const user = await models.User.findOne({
+      where: { email },
+      include: [
+        {
+          model: models.Role,
+          as: "Role",
+          include: [
+            {
+              model: models.Permission,
+              as: "permissions",
+              attributes: ["name"],
+              through: { attributes: [] }, // Masque les champs de la table pivot
+            },
+          ],
+        },
+      ],
+    });
+
     if (!user) {
       return res
         .status(401)
         .json({ error: "Email ou mot de passe incorrect." });
     }
 
-    // Vérifier le mot de passe
+    // Vérifier le mot de passe via la méthode du prototype
     const isValid = await user.validPassword(mot_de_passe);
     if (!isValid) {
       return res
         .status(401)
         .json({ error: "Email ou mot de passe incorrect." });
     }
-    // Vérification de validation du compte
 
+    // Blocage si le compte n'est pas encore validé par l'admin
     if (!user.est_actif) {
       return res.status(403).json({
-        error: "Votre compte est désactivé ou en attente de validation.",
+        error:
+          "Votre compte est en attente de validation par l'administrateur.",
       });
     }
 
-    // Mettre à jour la dernière connexion
+    // Mettre à jour la date de dernière connexion
     await user.update({ derniere_connexion: new Date() });
 
-    // Générer le token JWT
+    // Extraction et mise à plat des permissions pour le JWT
+    const userPermissions =
+      user.Role && user.Role.permissions
+        ? user.Role.permissions.map((p) => p.name)
+        : [];
 
-    const expiresIn = rememberMe ? "7d" : "1h"; // 7 jours si "se souvenir de moi"
+    // Déterminer la durée de validité du token
+    const expiresIn = rememberMe ? "7d" : "1h";
+
+    // On injecte le tableau des permissions et le nom du rôle dans le JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.Role ? user.Role.name : null,
+        permissions: userPermissions, // Nécessaire pour checkPermission.js
+      },
       process.env.JWT_SECRET,
       { expiresIn },
     );
-    // Préparer l'objet user à renvoyer (exclure mot_de_passe)
+
+    // Préparer l'objet à renvoyer au frontend Vue.js
     const userResponse = {
       id: user.id,
       nom: user.nom,
       prenoms: user.prenoms,
       email: user.email,
-      role: user.role,
+      role_id: user.role_id,
+      role: user.Role ? user.Role.name : null,
+      permissions: userPermissions,
       etablissement_id: user.etablissement_id,
       telephone: user.telephone,
       est_actif: user.est_actif,
     };
 
-    console.log("JWT_SECRET:", process.env.JWT_SECRET);
-    console.log("Token généré:", token);
-
     res.json({ token, user: userResponse });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
+    next(error);
   }
 });
 
@@ -160,7 +199,8 @@ router.post("/reset-password", async (req, res) => {
 
     res.json({ message: "Mot de passe réinitialisé" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
+    next(error);
   }
 });
 

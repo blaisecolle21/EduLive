@@ -1,31 +1,43 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import Login from '../components/Login.vue';
-import Register from '../components/Register.vue';
-import Dashboard from '../components/Dashboard.vue';
-import Enseignant from '../components/Enseignant.vue';
-import ForgotPassword from '../components/ForgotPassword.vue';
-import ResetPassword from '../components/ResetPassword.vue';
+import { createRouter, createWebHistory } from "vue-router";
+import Login from "../components/Login.vue";
+import Register from "../components/Register.vue";
+import Dashboard from "../components/Dashboard.vue";
+import Enseignant from "../components/Enseignant.vue";
+import ForgotPassword from "../components/ForgotPassword.vue";
+import ResetPassword from "../components/ResetPassword.vue";
+import Responsable from "../components/Responsable.vue";
+import ValidationQr from "../components/ValidationQr.vue";
 
 const routes = [
-  { path: '/login', component: Login },
-  { path: '/register', component: Register },
-  { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true } },
-  { path: '/enseignant', component: Enseignant, meta: { requiresAuth: true } },
-  { path: '/', redirect: '/login' },
-  { path: '/forgot-password', component: ForgotPassword },
-  { path: '/reset-password/:token', component: ResetPassword }
+  { path: "/login", component: Login },
+  { path: "/register", component: Register },
+  { path: "/dashboard", component: Dashboard, meta: { requiresAuth: true } },
+  { path: "/enseignant", component: Enseignant, meta: { requiresAuth: true } },
+  { path: "/", redirect: "/login" },
+  { path: "/forgot-password", component: ForgotPassword },
+  { path: "/reset-password/:token", component: ResetPassword },
+  {
+    path: "/responsable",
+    component: Responsable,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/validation-qr/:qrToken",
+    component: ValidationQr,
+    meta: { requiresAuth: true },
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  routes,
 });
 
 // Garde de navigation pour les routes protégées
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (to.meta.requiresAuth && !token) {
-    next('/login');
+    next("/login");
   } else {
     next();
   }

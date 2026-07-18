@@ -1,6 +1,5 @@
 const { DataTypes } = require("sequelize");
 const bcrypt = require("bcrypt");
-const { Hooks } = require("sequelize/lib/hooks");
 
 module.exports = (sequelize) => {
   const User = sequelize.define(
@@ -32,10 +31,17 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(255),
         allowNull: false,
       },
-      role: {
-        type: DataTypes.ENUM("enseignant", "admin"),
+
+      // MODIFICATION : Remplacement de l'ENUM par la clé étrangère du rôle
+      role_id: {
+        type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+          model: "roles",
+          key: "id",
+        },
       },
+
       etablissement_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -48,11 +54,9 @@ module.exports = (sequelize) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-
-      // Migration / modèle User : ajouter
       est_valide: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false, // false = jamais validé par l'admin
+        defaultValue: false,
       },
       derniere_connexion: {
         type: DataTypes.DATE,
@@ -112,8 +116,19 @@ module.exports = (sequelize) => {
     return await bcrypt.compare(password, this.mot_de_passe);
   };
 
-  // Définir la relation avec les tables etablissements et enseignants_disciplines
+  // Définir les relations
   User.associate = (models) => {
+    // MODIFICATION : Relation avec la table des Rôles
+    User.belongsTo(models.Role, {
+      foreignKey: "role_id",
+      as: "Role",
+    });
+
+    User.hasOne(models.ResponsableClasse, {
+      foreignKey: "user_id",
+      as: "ResponsableClasse",
+    });
+
     User.belongsTo(models.Etablissement, {
       foreignKey: "etablissement_id",
       as: "Etablissement",
