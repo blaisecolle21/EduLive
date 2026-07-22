@@ -1,9 +1,12 @@
 // src/utils/connectivity.js
 import { ref } from "vue";
 import api from "../api";
+import { syncPendingEntries, countPending } from "../db/syncService";
 
 export const isOnline = ref(navigator.onLine);
 export const isServerReachable = ref(true);
+export const pendingCount = ref(0);
+export const syncing = ref(false);
 
 async function checkServerReachable() {
   try {
@@ -14,17 +17,37 @@ async function checkServerReachable() {
   }
 }
 
+export async function refreshPendingCount() {
+  pendingCount.value = await countPending();
+}
+
+async function runSync() {
+  if (syncing.value) return; // évite les syncs concurrentes
+  const count = await countPending();
+  if (count === 0) return;
+
+  syncing.value = true;
+  try {
+    await syncPendingEntries();
+  } finally {
+    syncing.value = false;
+    await refreshPendingCount();
+  }
+}
+
 let watcherStarted = false;
 
-export function initConnectivityWatcher(onReconnect) {
-  if (watcherStarted) return; // évite les doublons si appelé plusieurs fois
+export function initConnectivityWatcher() {
+  if (watcherStarted) return;
   watcherStarted = true;
+
+  refreshPendingCount();
 
   window.addEventListener("online", async () => {
     isOnline.value = true;
     const reachable = await checkServerReachable();
     isServerReachable.value = reachable;
-    if (reachable && onReconnect) onReconnect();
+    if (reachable) await runSync();
   });
 
   window.addEventListener("offline", () => {
@@ -32,16 +55,15 @@ export function initConnectivityWatcher(onReconnect) {
     isServerReachable.value = false;
   });
 
-  // vérification périodique — navigator.onLine peut mentir (ex: connecté au wifi mais pas d'internet réel)
   setInterval(async () => {
     const reachable = await checkServerReachable();
     const wasUnreachable = !isServerReachable.value;
     isServerReachable.value = reachable;
-    if (reachable && wasUnreachable && onReconnect) onReconnect();
+    if (reachable && wasUnreachable) await runSync();
   }, 30000);
 
-  // vérification immédiate au démarrage
-  checkServerReachable().then((reachable) => {
+  checkServerReachable().then(async (reachable) => {
     isServerReachable.value = reachable;
+    if (reachable) await runSync();
   });
 }

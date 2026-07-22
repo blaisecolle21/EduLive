@@ -560,8 +560,7 @@ router.get(
       res.json(entries);
     } catch (error) {
       console.error("❌ Erreur récupération entrées cahier:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -776,9 +775,8 @@ router.post(
       console.error("❌ Erreur création entrée:", error);
       res.status(500).json({
         error: "Erreur lors de la création de l'entrée",
-        details: "Erreur serveur, veuillez réessayer.",
+        details: error.message,
       });
-      next(error);
     }
   },
 );
@@ -964,9 +962,8 @@ router.put(
       console.error("❌ Erreur mise à jour entrée:", error);
       res.status(500).json({
         error: "Erreur lors de la mise à jour",
-        details: "Erreur serveur, veuillez réessayer.",
+        details: error.message,
       });
-      next(error);
     }
   },
 );
@@ -1004,8 +1001,7 @@ router.delete(
       res.json({ message: "Entrée supprimée avec succès" });
     } catch (error) {
       console.error("❌ Erreur suppression entrée:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1058,8 +1054,7 @@ router.patch(
       });
     } catch (error) {
       console.error("❌ Erreur mise à jour statut:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1103,8 +1098,7 @@ router.get(
       res.json(history);
     } catch (error) {
       console.error("❌ Erreur récupération historique:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1238,8 +1232,7 @@ router.get(
       });
     } catch (error) {
       console.error("❌ Erreur récupération activités programme:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1402,8 +1395,7 @@ router.get(
       });
     } catch (error) {
       console.error("❌ Erreur récupération activités filtrées:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1450,8 +1442,7 @@ router.get(
       res.json(entries);
     } catch (error) {
       console.error("❌ Erreur récupération toutes les entrées:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1620,8 +1611,7 @@ router.get(
       });
     } catch (error) {
       console.error("❌ Erreur récupération lots:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1705,8 +1695,7 @@ router.get(
       res.json(entries);
     } catch (error) {
       console.error("❌ Erreur récupération entrées en attente:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1792,8 +1781,7 @@ router.patch(
       res.json({ message: "Entrée validée avec succès", entry });
     } catch (error) {
       console.error("❌ Erreur validation entrée:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1844,8 +1832,7 @@ router.patch(
       res.json({ message: "Entrée rejetée", entry });
     } catch (error) {
       console.error("❌ Erreur rejet entrée:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1894,8 +1881,7 @@ router.get(
       res.json(entry);
     } catch (error) {
       console.error("❌ Erreur récupération entrée via QR:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1931,8 +1917,7 @@ router.get(
       res.json(entries);
     } catch (error) {
       console.error("❌ Erreur récupération soumissions responsable:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -1995,8 +1980,7 @@ router.put(
       res.json({ message: "Entrée resoumise avec succès", entry });
     } catch (error) {
       console.error("❌ Erreur resoumission entrée:", error);
-      res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-      next(error);
+      res.status(500).json({ error: error.message });
     }
   },
 );

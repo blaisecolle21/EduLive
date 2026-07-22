@@ -1829,6 +1829,14 @@
           <h2 class="text-2xl font-bold text-gray-800 mb-6">
             📝 Consulter les entrées des enseignants
           </h2>
+
+          <div
+            v-if="entreesHorsLigne"
+            class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4 text-sm text-orange-700"
+          >
+            📴 Mode hors ligne — données du
+            {{ formatDate(entreesLastSync) }} (peuvent ne pas être à jour)
+          </div>
           <div class="bg-white shadow rounded-lg p-6">
             <!-- Filtres -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -2656,6 +2664,12 @@
 <script>
 import api from "../api";
 
+import {
+  cacheAdminEntries,
+  getCachedAdminEntries,
+  getAdminEntriesLastSync,
+} from "../db/syncService";
+
 import SidebarItem from "./SidebarItem.vue";
 
 import { startSessionTimer, stopSessionTimer } from "../utils/session";
@@ -2817,6 +2831,8 @@ export default {
       filtreEntreesEnseignant: "",
       toutesLesEntrees: [],
       chargementEntrees: false,
+      entreesHorsLigne: false,
+      entreesLastSync: null,
       showHistoriqueModal: false,
       historiqueEntree: [],
       historiqueEntreeId: null,
@@ -3443,20 +3459,28 @@ export default {
       try {
         const response = await api.get("/cahier/toutes-les-entrees-admin");
         this.toutesLesEntrees = response.data;
-        console.log(`✅ ${this.toutesLesEntrees.length} entrée(s) chargée(s)`);
+        this.entreesHorsLigne = false;
+        console.log(` ${this.toutesLesEntrees.length} entrée(s) chargée(s)`);
+
+        // Mise en cache pour consultation hors ligne
+        await cacheAdminEntries(response.data);
       } catch (error) {
         console.error("Erreur chargement entrées:", error);
-        alert("Erreur lors du chargement des entrées");
+
+        // Fallback hors ligne : on tente de charger depuis le cache local
+        const cached = await getCachedAdminEntries();
+        if (cached.length > 0) {
+          this.toutesLesEntrees = cached;
+          this.entreesHorsLigne = true;
+          this.entreesLastSync = await getAdminEntriesLastSync();
+        } else {
+          alert(
+            "Erreur lors du chargement des entrées, et aucune donnée en cache.",
+          );
+        }
       } finally {
         this.chargementEntrees = false;
       }
-    },
-
-    filtrerEntrees() {
-      // La filtration est automatique via le computed entreesFiltrees
-      console.log(
-        `Filtres appliqués: ${this.entreesFiltrees.length} résultat(s)`,
-      );
     },
 
     async voirHistoriqueEntree(entryId) {

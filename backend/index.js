@@ -17,14 +17,17 @@ app.use(helmet());
 //  CORS dynamique — accepte le frontend en prod ET localhost en dev
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.FRONTEND_URL, // ex: https://ton-projet.vercel.app
-].filter(Boolean); // retire les valeurs undefined si FRONTEND_URL n'est pas encore défini
+  process.env.FRONTEND_URL,
+].filter(Boolean);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // autorise aussi les requêtes sans origin (ex: Postman, health checks)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        process.env.NODE_ENV !== "production"
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Non autorisé par CORS"));
@@ -90,7 +93,7 @@ process.on("unhandledRejection", (reason) => {
   console.error("❌ Rejet de promesse non géré :", reason.stack || reason);
 });
 
-// ✅ Middleware d'erreurs doit etre  AVANT app.listen()
+//  Middleware d'erreurs doit etre  AVANT app.listen()
 app.use((err, req, res, next) => {
   console.error("--- ERREUR SERVEUR ---");
   console.error(err);

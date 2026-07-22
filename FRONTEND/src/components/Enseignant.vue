@@ -1229,6 +1229,113 @@
         </div>
       </div>
 
+      <!-- Section Mes Entrées -->
+      <div
+        v-if="activeSection === 'mes-entrees'"
+        class="max-w-5xl mx-auto space-y-6"
+      >
+        <h2 class="text-xl font-semibold mb-4">Mes Entrées</h2>
+
+        <!-- Sélection de la classe -->
+        <div v-if="!mesEntreesSelectedClassId">
+          <div v-if="loadingClasses" class="text-center">
+            Chargement des classes...
+          </div>
+          <div
+            v-else-if="uniqueClasses.length"
+            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+          >
+            <div
+              v-for="classe in uniqueClasses"
+              :key="'mes-entrees-' + classe.id"
+              @click="selectMesEntreesClasse(classe.id)"
+              class="bg-white p-4 rounded-lg shadow cursor-pointer hover:bg-gray-100 hover:scale-105 transition-transform duration-200"
+            >
+              <h3 class="text-xl font-semibold">
+                📘 {{ classe.nom }} ({{ classe.promotion }})
+              </h3>
+            </div>
+          </div>
+          <p v-else class="text-gray-500">Aucune classe trouvée.</p>
+        </div>
+
+        <!-- Liste des entrées de la classe sélectionnée -->
+        <div v-else>
+          <button
+            @click="mesEntreesSelectedClassId = null"
+            class="text-sm text-teal-600 mb-4 hover:underline"
+          >
+            ← Retour aux classes
+          </button>
+
+          <h3 class="text-lg font-semibold mb-3">
+            {{ getClassName(mesEntreesSelectedClassId) }}
+          </h3>
+
+          <div
+            v-if="mesEntreesHorsLigne"
+            class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4 text-sm text-orange-700"
+          >
+            📴 Mode hors ligne — affichage des entrées des 2 derniers mois
+            (données du {{ formatDate(mesEntreesLastSync) }})
+          </div>
+
+          <div v-if="loadingMesEntrees" class="text-center py-6">
+            Chargement...
+          </div>
+
+          <div
+            v-else-if="mesEntreesList.length === 0"
+            class="bg-gray-50 rounded-lg p-6 text-center text-gray-500"
+          >
+            Aucune entrée trouvée pour cette classe.
+          </div>
+
+          <div v-else class="space-y-3">
+            <div
+              v-for="entry in mesEntreesList"
+              :key="entry.id"
+              @click="viewEntry(entry)"
+              class="bg-white border rounded-lg p-4 cursor-pointer hover:bg-gray-50 flex justify-between items-center"
+            >
+              <div>
+                <p class="font-medium text-gray-800">
+                  {{ entry.sa_number }} — {{ entry.sa_name }}
+                </p>
+                <p class="text-xs text-gray-500">
+                  {{ entry.discipline?.nom }} •
+                  {{ formatDate(entry.date_cours) }}
+                </p>
+              </div>
+              <span
+                v-if="entry.statut"
+                class="text-xs px-2 py-1 rounded-full font-medium"
+                :class="{
+                  'bg-yellow-100 text-yellow-700':
+                    entry.statut === 'en_attente',
+                  'bg-green-100 text-green-700': entry.statut === 'validee',
+                  'bg-red-100 text-red-700': entry.statut === 'rejetee',
+                }"
+              >
+                {{
+                  entry.statut === "validee"
+                    ? "✅"
+                    : entry.statut === "rejetee"
+                      ? "❌"
+                      : "⏳"
+                }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <EntryDetailModal
+          v-if="selectedEntryDetail"
+          :entry="selectedEntryDetail"
+          @close="selectedEntryDetail = null"
+        />
+      </div>
+
       <!-- Section Notification -->
       <div v-if="activeSection === 'notification'">
         <div class="notifications-container p-6 max-w-5xl mx-auto">
@@ -1769,6 +1876,15 @@ import { useEditor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import MenuBar from "./MenuBar.vue";
 // import '../assets/animations.css';
+
+import EntryDetailModal from "./EntryDetailModal.vue";
+import {
+  cacheEntriesForClasse,
+  getCachedEntriesForClasse,
+  getEntriesLastSync,
+} from "../db/syncService";
+import { isServerReachable } from "../utils/connectivity";
+
 import { startSessionTimer, stopSessionTimer } from "../utils/session";
 
 import SidebarItem from "./SidebarItem.vue";
@@ -1784,6 +1900,7 @@ import {
   PhoneIcon,
   BuildingOfficeIcon,
   ClipboardDocumentCheckIcon,
+  ClipboardDocumentListIcon,
   PencilSquareIcon,
 } from "@heroicons/vue/24/outline";
 
@@ -1793,6 +1910,7 @@ export default {
     EditorContent,
     MenuBar,
     SidebarItem,
+    EntryDetailModal,
     ArrowLeftStartOnRectangleIcon,
     UserCircleIcon,
     BookOpenIcon,
@@ -1860,6 +1978,13 @@ export default {
       commentaireRejet: "",
       processingId: null,
 
+      mesEntreesSelectedClassId: null,
+      mesEntreesList: [],
+      loadingMesEntrees: false,
+      mesEntreesHorsLigne: false,
+      mesEntreesLastSync: null,
+      selectedEntryDetail: null,
+
       menuItems: [
         {
           section: "mes-classes",
@@ -1877,6 +2002,12 @@ export default {
           section: "progression",
           label: "Progression",
           icon: ChartBarIcon,
+          badge: null,
+        },
+        {
+          section: "mes-entrees",
+          label: "Mes Entrées",
+          icon: ClipboardDocumentListIcon,
           badge: null,
         },
         {
@@ -2301,6 +2432,39 @@ export default {
       if (this.newEntry.saNumber) {
         await this.loadActivitesFromProgramme();
       }
+    },
+
+    async selectMesEntreesClasse(classeId) {
+      this.mesEntreesSelectedClassId = classeId;
+      await this.fetchMesEntreesParClasse(classeId);
+    },
+
+    async fetchMesEntreesParClasse(classeId) {
+      this.loadingMesEntrees = true;
+      this.mesEntreesHorsLigne = false;
+      try {
+        const response = await api.get("/cahier/cahier-entries", {
+          params: { classe_id: classeId },
+        });
+        this.mesEntreesList = response.data;
+        await cacheEntriesForClasse(classeId, response.data);
+      } catch (error) {
+        console.error("Erreur récupération mes entrées:", error);
+        const cached = await getCachedEntriesForClasse(classeId, 60);
+        if (cached.length > 0) {
+          this.mesEntreesList = cached;
+          this.mesEntreesHorsLigne = true;
+          this.mesEntreesLastSync = await getEntriesLastSync(classeId);
+        } else {
+          this.mesEntreesList = [];
+        }
+      } finally {
+        this.loadingMesEntrees = false;
+      }
+    },
+
+    viewEntry(entry) {
+      this.selectedEntryDetail = entry;
     },
 
     /**
