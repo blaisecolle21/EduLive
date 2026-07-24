@@ -1,51 +1,63 @@
 // services/emailService.js
-const nodemailer = require("nodemailer");
+const axios = require("axios");
+
+// services/emailService.js
+const axios = require("axios");
 
 class EmailService {
   constructor() {
-    // Configuration du transporteur email
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: process.env.SMTP_PORT || 587,
-      secure: false, // true pour 465, false pour les autres ports
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+    this.brevoClient = axios.create({
+      baseURL: "https://api.brevo.com/v3",
+      headers: {
+        "api-key": process.env.BREVO_API_KEY,
+        "Content-Type": "application/json",
       },
     });
+  }
+
+  async _envoyerViaBrevo({ to, subject, html, fromName }) {
+    try {
+      const response = await this.brevoClient.post("/smtp/email", {
+        sender: {
+          name: fromName || "EduLive - Plateforme Cahier de Texte Online",
+          email: process.env.SMTP_USER, // ton adresse vérifiée sur Brevo
+        },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      });
+      return { success: true, messageId: response.data.messageId };
+    } catch (error) {
+      console.error(
+        "❌ Erreur envoi Brevo:",
+        error.response?.data || error.message,
+      );
+      return { success: false, error: error.message };
+    }
   }
 
   /**
    * Envoyer une notification par email
    */
   async envoyerNotification(destinataire, notification) {
-    try {
-      const categorieEmoji = {
-        felicitations: "🎉",
-        encouragement: "💪",
-        avertissement: "⚠️",
-        alerte: "🚨",
-        critique: "🔴",
-        avance_excessive: "⚡",
-        info: "ℹ️",
-      };
+    const categorieEmoji = {
+      felicitations: "🎉",
+      encouragement: "💪",
+      avertissement: "⚠️",
+      alerte: "🚨",
+      critique: "🔴",
+      avance_excessive: "⚡",
+      info: "ℹ️",
+    };
+    const emoji = categorieEmoji[notification.categorie] || "ℹ️";
 
-      const emoji = categorieEmoji[notification.categorie] || "ℹ️";
-
-      const mailOptions = {
-        from: `"Plateforme Cahier de Texte" <${process.env.SMTP_USER}>`,
-        to: destinataire.email,
-        subject: `${emoji} ${notification.titre}`,
-        html: this.genererTemplateEmail(destinataire, notification),
-      };
-
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log(" Email envoyé:", info.messageId);
-      return true;
-    } catch (error) {
-      console.error("❌ Erreur envoi email:", error);
-      return false;
-    }
+    const result = await this._envoyerViaBrevo({
+      to: destinataire.email,
+      subject: `${emoji} ${notification.titre}`,
+      html: this.genererTemplateEmail(destinataire, notification),
+    });
+    if (result.success) console.log(" Email envoyé:", result.messageId);
+    return result.success;
   }
 
   /**
@@ -191,37 +203,25 @@ class EmailService {
    */
   async envoyerMessagePersonnalise(destinataires, titre, message, adminNom) {
     const resultats = [];
-
     for (const destinataire of destinataires) {
-      try {
-        const mailOptions = {
-          from: `"${adminNom} - Administration" <${process.env.SMTP_USER}>`,
-          to: destinataire.email,
-          subject: `📢 ${titre}`,
-          html: this.genererTemplateMessagePersonnalise(
-            destinataire,
-            titre,
-            message,
-            adminNom,
-          ),
-        };
-
-        const info = await this.transporter.sendMail(mailOptions);
-        resultats.push({
-          email: destinataire.email,
-          success: true,
-          messageId: info.messageId,
-        });
-      } catch (error) {
-        console.error(`❌ Erreur envoi à ${destinataire.email}:`, error);
-        resultats.push({
-          email: destinataire.email,
-          success: false,
-          error: error.message,
-        });
-      }
+      const result = await this._envoyerViaBrevo({
+        to: destinataire.email,
+        subject: `📢 ${titre}`,
+        html: this.genererTemplateMessagePersonnalise(
+          destinataire,
+          titre,
+          message,
+          adminNom,
+        ),
+        fromName: `${adminNom} - Administration`,
+      });
+      resultats.push({
+        email: destinataire.email,
+        success: result.success,
+        messageId: result.messageId,
+        error: result.error,
+      });
     }
-
     return resultats;
   }
 
@@ -294,21 +294,14 @@ class EmailService {
    * Envoyer l'email de réinitialisation de mot de passe
    */
   async envoyerMailReinitialisation(email, resetUrl) {
-    try {
-      const mailOptions = {
-        from: `"Plateforme Cahier de Texte" <${process.env.SMTP_USER || "no-reply@cahiertexte.com"}>`,
-        to: email,
-        subject: "🔒 Réinitialisation de votre mot de passe",
-        html: this.genererTemplateReinitialisation(resetUrl),
-      };
-
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log(" Key Email Réinitialisation envoyé:", info.messageId);
-      return true;
-    } catch (error) {
-      console.error("❌ Erreur envoi email réinitialisation:", error);
-      return false;
-    }
+    const result = await this._envoyerViaBrevo({
+      to: email,
+      subject: "🔒 Réinitialisation de votre mot de passe",
+      html: this.genererTemplateReinitialisation(resetUrl),
+    });
+    if (result.success)
+      console.log(" Email Réinitialisation envoyé:", result.messageId);
+    return result.success;
   }
 
   /**
@@ -377,20 +370,6 @@ class EmailService {
     </body>
     </html>
     `;
-  }
-
-  /**
-   * Vérifier la connexion SMTP
-   */
-  async verifierConnexion() {
-    try {
-      await this.transporter.verify();
-      console.log(" Serveur SMTP prêt");
-      return true;
-    } catch (error) {
-      console.error("❌ Erreur connexion SMTP:", error);
-      return false;
-    }
   }
 }
 
