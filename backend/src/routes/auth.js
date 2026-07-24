@@ -28,7 +28,7 @@ router.post("/register", async (req, res) => {
       prenoms,
       email,
       mot_de_passe,
-      role_id: ROLE_ENSEIGNANT_ID, // ✅ toujours forcé, jamais depuis req.body
+      role_id: ROLE_ENSEIGNANT_ID, // toujours forcé, jamais depuis req.body
       etablissement_id,
       telephone,
       est_actif: false,
@@ -144,8 +144,8 @@ router.post("/login", loginLimiter, async (req, res) => {
 
     res.json({ token, user: userResponse });
   } catch (error) {
+    console.error("❌ Erreur login:", error);
     res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-    next(error);
   }
 });
 
@@ -154,9 +154,17 @@ router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
     const user = await models.User.findOne({ where: { email } });
+
+    // Toujours la même réponse, que l'utilisateur existe ou non
+    const genericMessage = {
+      message:
+        "Si cet email est enregistré, un lien de réinitialisation a été envoyé.",
+    };
+
     if (!user) {
-      return res.status(404).json({ error: "Utilisateur non trouvé" });
+      return res.json(genericMessage);
     }
+
     const token = crypto.randomBytes(20).toString("hex");
     const expire = new Date(Date.now() + 3600000); // 1h
 
@@ -165,14 +173,15 @@ router.post("/forgot-password", async (req, res) => {
       token_reset_expire: expire,
     });
 
-    const resetUrl = `http://localhost:5173/reset-password/${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
     await emailService.envoyerMailReinitialisation(email, resetUrl);
 
-    res.json({ message: "Email de réinitialisation envoyé" });
+    res.json({ genericMessage });
   } catch (error) {
-    console.error("Erreur envoi email:", error);
-    res.status(500).json({ error: "Erreur lors de l'envoi de l'email" });
+    console.error("❌ Erreur forgot-password:", error);
+    // Même en cas d'erreur interne, on ne révèle rien de spécifique
+    res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
   }
 });
 
@@ -199,8 +208,8 @@ router.post("/reset-password", async (req, res) => {
 
     res.json({ message: "Mot de passe réinitialisé" });
   } catch (error) {
+    console.error("❌ Erreur reset-password:", error);
     res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
-    next(error);
   }
 });
 
