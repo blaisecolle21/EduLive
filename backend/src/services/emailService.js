@@ -1,9 +1,6 @@
 // services/emailService.js
 const axios = require("axios");
 
-// services/emailService.js
-const axios = require("axios");
-
 class EmailService {
   constructor() {
     this.brevoClient = axios.create({
