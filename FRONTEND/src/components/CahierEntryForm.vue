@@ -86,7 +86,13 @@
         <div v-if="loadingActivites" class="mt-2 text-sm text-gray-600">
           🔄 Chargement des activités depuis le programme théorique...
         </div>
-
+        <div
+          v-if="activitesHorsLigne"
+          class="mb-2 text-xs text-orange-600 bg-orange-50 rounded p-2"
+        >
+          Activités chargées depuis le cache local (données possiblement non à
+          jour)
+        </div>
         <div
           v-else-if="
             !availableActivites.length &&
@@ -276,6 +282,11 @@ import api from "../api";
 import { useEditor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import MenuBar from "./MenuBar.vue";
+import {
+  cacheActivites,
+  getCachedActivites,
+  queueEntry,
+} from "../db/syncService";
 
 export default {
   name: "CahierEntryForm",
@@ -312,6 +323,8 @@ export default {
       loadingActivites: false,
       submitting: false,
       editor: null,
+      activitesHorsLigne: false,
+      queueingOffline: false,
     };
   },
   computed: {
@@ -447,8 +460,55 @@ export default {
         if (response.data.saName && !this.newEntry.saName) {
           this.newEntry.saName = response.data.saName;
         }
+
+        // mise en cache pour usage hors ligne
+
+        await cacheActivites(
+          this.classeId,
+          this.newEntry.disciplineId,
+          this.newEntry.saNumber,
+          {
+            activitesDisponibles,
+            saName: response.data.saName || "",
+            lots: response.data.lots,
+          },
+        );
+
+        console.log(
+          "✅ CACHE ÉCRIT:",
+          this.ClassId,
+          this.newEntry.disciplineId,
+          this.newEntry.saNumber,
+        );
       } catch (error) {
         console.error("Erreur chargement activités:", error);
+
+        // fallback hors ligne : tenter le cache local
+        const cached = await getCachedActivites(
+          this.classeId,
+          this.newEntry.disciplineId,
+          this.newEntry.saNumber,
+        );
+
+        console.log(
+          "🔍 CACHE LU:",
+          this.ClassId,
+          this.newEntry.disciplineId,
+          this.newEntry.saNumber,
+          "→",
+          cached,
+        );
+
+        if (cached) {
+          this.availableActivites = cached.data.activitesDisponibles;
+          if (cached.data.saName && !this.newEntry.saName) {
+            this.newEntry.saName = cached.data.saName;
+          }
+          this.activitesHorsLigne = true;
+        } else {
+          this.availableActivites = [];
+          this.activitesHorsLigne = false;
+        }
       } finally {
         this.loadingActivites = false;
       }
@@ -493,31 +553,52 @@ export default {
           annee_scolaire: "2025-2026",
         };
 
+        // La mise en file d'attente hors ligne n'est prise en charge que pour la
+        // création directe d'une nouvelle entrée par l'enseignant (hors scope :
+        // soumission responsable, resoumission, modification).
+        const eligibleOffline =
+          this.mode === "direct" && !this.entryToEdit && !this.isResubmit;
+
         let response;
-        if (this.isResubmit && this.entryToEdit) {
-          response = await api.put(
-            `/cahier/cahier-entries/${this.entryToEdit.id}/resoumettre`,
-            entryData,
-          );
-        } else if (this.mode === "submit") {
-          entryData.teacher_id = this.targetTeacherId;
-          response = await api.post("/cahier/cahier-entries", entryData);
-        } else {
-          entryData.teacher_id = this.currentUserId;
-          if (this.entryToEdit) {
+        try {
+          if (this.isResubmit && this.entryToEdit) {
             response = await api.put(
-              `/cahier/cahier-entries/${this.entryToEdit.id}`,
+              `/cahier/cahier-entries/${this.entryToEdit.id}/resoumettre`,
               entryData,
             );
-          } else {
+          } else if (this.mode === "submit") {
+            entryData.teacher_id = this.targetTeacherId;
             response = await api.post("/cahier/cahier-entries", entryData);
+          } else {
+            entryData.teacher_id = this.currentUserId;
+            if (this.entryToEdit) {
+              response = await api.put(
+                `/cahier/cahier-entries/${this.entryToEdit.id}`,
+                entryData,
+              );
+            } else {
+              response = await api.post("/cahier/cahier-entries", entryData);
+            }
+          }
+          this.$emit("success", response.data);
+        } catch (error) {
+          //  Distinction cruciale : erreur réseau (pas de réponse serveur) vs vraie erreur métier
+          const isNetworkError = !error.response;
+
+          if (isNetworkError && eligibleOffline) {
+            entryData.teacher_id = this.currentUserId;
+            await queueEntry(entryData);
+            this.$emit("success", { queued: true });
+          } else if (isNetworkError) {
+            alert(
+              "Vous semblez être hors connexion. Cette action (modification, soumission responsable) " +
+                "nécessite une connexion réseau et ne peut pas être mise en file d'attente.",
+            );
+          } else {
+            console.error("Erreur soumission fiche:", error);
+            alert("Erreur : " + (error.response?.data?.error || error.message));
           }
         }
-
-        this.$emit("success", response.data);
-      } catch (error) {
-        console.error("Erreur soumission fiche:", error);
-        alert("Erreur : " + (error.response?.data?.error || error.message));
       } finally {
         this.submitting = false;
       }

@@ -18,15 +18,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// ✅ Intercepteur réponse : déconnecter si token expiré
+// Intercepteur réponse : déconnecter si token expiré
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isAuthError = error.response?.status === 401;
+    const isOffline = !navigator.onLine;
+
+    if (isAuthError && !isOffline) {
+      // Vraie expiration détectée EN LIGNE → déconnexion légitime
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       router.push("/login");
     }
+    // Si 401 pendant qu'on est offline : on ne déconnecte pas.
+    // L'utilisateur garde accès à son cache local ; la réauth se fera
+    // naturellement au retour en ligne (via le connectivity watcher).
+
     return Promise.reject(error);
   },
 );

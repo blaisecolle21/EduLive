@@ -2939,13 +2939,23 @@ export default {
         await this.fetchProgressionOverview();
       }
     } catch (error) {
-      console.error("Erreur chargement profil:", error.response?.data);
+      const isAuthError = error.response?.status === 401 || error.response?.status === 403;
+    const isNetworkError = !error.response;
+
+    console.error("Erreur chargement profil:", error.response?.data || error.message);
+
+    if (isAuthError) {
       this.$router.push("/login");
+    } else if (isNetworkError) {
+      // Hors ligne : on ne déconnecte pas, on tente de continuer avec les données en cache
+      console.warn("⚠️ Hors ligne au chargement — utilisation des données locales si disponibles");
+    }
+    // Pour toute autre erreur (500 etc.), on ne déconnecte pas non plus
     }
   },
 
   async mounted() {
-    startSessionTimer(); // ✅ démarre le compte à rebours dès l'ouverture
+    startSessionTimer(); //  démarre le compte à rebours dès l'ouverture
 
     await Promise.all([
       this.chargerNotifications(),
@@ -2957,7 +2967,7 @@ export default {
   },
 
   beforeUnmount() {
-    stopSessionTimer(); // ✅ nettoyage quand on quitte le composant
+    stopSessionTimer(); //  nettoyage quand on quitte le composant
   },
 
   methods: {

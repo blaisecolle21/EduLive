@@ -20,4 +20,14 @@ db.version(1).stores({
   metaCache: "key", // pour stocker la date de dernière synchro
 });
 
+db.version(2).stores({
+  pendingEntries: "++localId, status, createdAt",
+  activitesCache: "[classeId+disciplineId+saNumber], cachedAt",
+  classesCache: "id",
+  disciplinesCache: "id, classe_id",
+  entriesCache: "id, discipline_id, teacher_id, classeId", // camelCase, cohérent avec syncService.js
+  adminEntriesCache: "id, discipline_id, teacher_id",
+  metaCache: "key",
+});
+
 export default db;

@@ -6,8 +6,11 @@ import api from "../api";
  * Utilisée quand la requête réseau échoue ou qu'on est hors ligne.
  */
 export async function queueEntry(entryData) {
+  // Convertit les objets réactifs Vue (Proxy) en objet JS plat, clonable par IndexedDB
+  const plainData = JSON.parse(JSON.stringify(entryData));
+
   const localId = await db.pendingEntries.add({
-    payload: entryData,
+    payload: plainData,
     status: "pending", // pending | syncing | error
     createdAt: new Date().toISOString(),
     errorMessage: null,

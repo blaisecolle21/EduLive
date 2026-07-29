@@ -321,14 +321,14 @@
 
                   <td class="border border-gray-300 p-3">
                     <div class="flex space-x-1">
-                      <button
+                      <!-- <button
                         @click="editEntry(entry)"
                         class="bg-yellow-500 text-white px-2 py-1 rounded text-sm hover:bg-yellow-600"
                         title="Modifier"
                       >
                         ✏️ Modifier
                       </button>
-                      <!-- <button 
+                      <button 
                     @click="showHistory(entry.id)" 
                     class="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
                     title="Historique"
@@ -776,18 +776,20 @@
                 class="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t"
               >
                 <button
-                  type="submit"
-                  class="w-full sm:w-auto bg-blue-500 text-white p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  :disabled="!isFormValid"
-                >
-                  {{ editingEntry ? "✅Mettre à jour" : "➕ Ajouter" }}
-                </button>
-                <button
                   type="button"
                   @click="cancelEntryEdit"
                   class="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
                   Annuler
+                </button>
+                <button
+                  type="submit"
+                  class="w-full sm:w-auto bg-blue-500 text-white p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  :disabled="!isFormValid"
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed
+                >
+                  {{ submitButtonLabel }}
                 </button>
               </div>
             </form>
@@ -1236,6 +1238,15 @@
       >
         <h2 class="text-xl font-semibold mb-4">Mes Entrées</h2>
 
+        <div
+          v-if="pendingLocalEntries.length > 0"
+          class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4"
+        >
+          <p class="text-sm font-medium text-blue-700">
+            ⏳ {{ pendingLocalEntries.length }} fiche(s) en attente de
+            synchronisation (créées hors connexion)
+          </p>
+        </div>
         <!-- Sélection de la classe -->
         <div v-if="!mesEntreesSelectedClassId">
           <div v-if="loadingClasses" class="text-center">
@@ -1252,7 +1263,7 @@
               class="bg-white p-4 rounded-lg shadow cursor-pointer hover:bg-gray-100 hover:scale-105 transition-transform duration-200"
             >
               <h3 class="text-xl font-semibold">
-                📘 {{ classe.nom }} ({{ classe.promotion }})
+                {{ classe.nom }} ({{ classe.promotion }})
               </h3>
             </div>
           </div>
@@ -1882,7 +1893,12 @@ import {
   cacheEntriesForClasse,
   getCachedEntriesForClasse,
   getEntriesLastSync,
+  cacheActivites, // Nouvel ajout
+  getCachedActivites, // Nouvel ajout
+  queueEntry, // Nouvel ajout
+  getPendingEntries,
 } from "../db/syncService";
+
 import { isServerReachable } from "../utils/connectivity";
 
 import { startSessionTimer, stopSessionTimer } from "../utils/session";
@@ -2120,7 +2136,7 @@ export default {
       return selectedClass.Disciplines;
     },
 
-    // ✅ Disciplines pour la classe sélectionnée dans Progression
+    // Disciplines pour la classe sélectionnée dans Progression
     progressionDisciplines() {
       if (!this.selectedProgressionClassId) return [];
       const selectedClass = this.classes.find(
@@ -2130,7 +2146,7 @@ export default {
       return selectedClass.Disciplines;
     },
 
-    // ✅ VERSION CORRIGÉE
+    // VERSION CORRIGÉE
     filteredCahierEntries() {
       if (!this.selectedClassId) {
         console.log("❌ Aucune classe sélectionnée");
@@ -2188,7 +2204,7 @@ export default {
       return combined.join("\n");
     },
 
-    // ✅ Calculer le pourcentage de réalisation local
+    // Calculer le pourcentage de réalisation local
     pourcentageRealise() {
       if (!this.activitesStatus) return 0;
 
@@ -2199,6 +2215,15 @@ export default {
         (s) => s === "fait",
       ).length;
       return Math.round((faites / total) * 100);
+    },
+
+    submitButtonLabel() {
+      if (!isServerReachable.value) {
+        return this.editingEntry
+          ? "📴 Enregistrer hors ligne"
+          : "📴 Ajouter (hors ligne)";
+      }
+      return this.editingEntry ? "✅ Mettre à jour" : "➕ Ajouter";
     },
 
     notificationsFiltrees() {
@@ -2237,8 +2262,24 @@ export default {
         this.selectedClassId = this.uniqueClasses[0].id;
       }
     } catch (error) {
-      console.error("Erreur chargement profil:", error.response?.data);
-      this.$router.push("/login");
+      const isAuthError =
+        error.response?.status === 401 || error.response?.status === 403;
+      const isNetworkError = !error.response;
+
+      console.error(
+        "Erreur chargement profil:",
+        error.response?.data || error.message,
+      );
+
+      if (isAuthError) {
+        this.$router.push("/login");
+      } else if (isNetworkError) {
+        // Hors ligne : on ne déconnecte pas, on tente de continuer avec les données en cache
+        console.warn(
+          "⚠️ Hors ligne au chargement — utilisation des données locales si disponibles",
+        );
+      }
+      // Pour toute autre erreur (500 etc.), on ne déconnecte pas non plus
     } finally {
       this.loadingClasses = false;
     }
@@ -2258,6 +2299,7 @@ export default {
       this.chargerNotifications(),
       this.fetchEntreesEnAttente(),
       this.chargerProfil(),
+      this.refreshPendingLocalEntries(), //  ajout
     ]);
   },
 
@@ -2305,7 +2347,7 @@ export default {
 
       try {
         for (const demande of demandes) {
-          // ✅ utilise Axios configuré avec baseURL et intercepteur JWT
+          // utilise Axios configuré avec baseURL et intercepteur JWT
           await api.post("/user-modifications", demande);
         }
 
@@ -2326,7 +2368,7 @@ export default {
       const classe = this.classes.find((c) => c.id === classId);
       return classe ? `${classe.nom} (${classe.promotion})` : "Inconnue";
     },
-    // ✅ CORrection decd getDisciplineName pour gérer les relations
+    //  CORrection decd getDisciplineName pour gérer les relations
     getDisciplineName(disciplineId) {
       // Chercher d'abord dans les disciplines de la classe
       if (this.selectedClassId) {
@@ -2365,7 +2407,7 @@ export default {
         console.error("Erreur récupération disciplines:", error);
       }
     },
-    // ✅Méthode fetchCahierEntries
+    // Méthode fetchCahierEntries
     async fetchCahierEntries() {
       try {
         console.log(
@@ -2481,7 +2523,7 @@ export default {
     },
 
     /**
-     * ✅ Récupérer le programme théorique et le taux prévu
+     * Récupérer le programme théorique et le taux prévu
      */
     async loadActivitesFromProgramme() {
       if (
@@ -2492,6 +2534,8 @@ export default {
         return;
       }
 
+      this.activitesHorsLigne = false;
+
       try {
         this.loadingActivites = true;
         this.loadingSaName = true;
@@ -2501,7 +2545,6 @@ export default {
         );
         if (!discipline) return;
 
-        // ✅ Utiliser la nouvelle route des lots
         const response = await api.get("/cahier/programme-lots", {
           params: {
             classe_id: this.selectedClassId,
@@ -2513,7 +2556,6 @@ export default {
 
         console.log("✅ Lots reçus:", response.data);
 
-        // Extraire toutes les activités disponibles
         const activitesDisponibles = [];
         response.data.lots.forEach((lot) => {
           if (!lot.estComplet) {
@@ -2522,21 +2564,61 @@ export default {
         });
 
         this.availableActivites = activitesDisponibles;
-
-        // Stocker les lots pour référence
         this.lotsActivites = response.data.lots;
 
-        // Pré-remplir le nom de SA
         if (response.data.saName && !this.newEntry.saName) {
           this.newEntry.saName = response.data.saName;
         }
 
-        // Afficher les stats
         if (response.data.stats) {
           console.log("📊 Stats lots:", response.data.stats);
         }
+
+        //  mise en cache pour usage hors ligne
+        await cacheActivites(
+          this.selectedClassId,
+          this.newEntry.disciplineId,
+          this.newEntry.saNumber,
+          {
+            activitesDisponibles,
+            saName: response.data.saName || "",
+            lots: response.data.lots,
+          },
+        );
+        console.log(
+          "✅ CACHE ÉCRIT:",
+          this.selectedClassId,
+          this.newEntry.disciplineId,
+          this.newEntry.saNumber,
+        );
       } catch (error) {
         console.error("❌ Erreur chargement lots:", error);
+
+        //  fallback hors ligne
+        const cached = await getCachedActivites(
+          this.selectedClassId,
+          this.newEntry.disciplineId,
+          this.newEntry.saNumber,
+        );
+        console.log(
+          "🔍 CACHE LU:",
+          this.selectedClassId,
+          this.newEntry.disciplineId,
+          this.newEntry.saNumber,
+          "→",
+          cached,
+        );
+
+        if (cached) {
+          this.availableActivites = cached.data.activitesDisponibles;
+          this.lotsActivites = cached.data.lots || [];
+          if (cached.data.saName && !this.newEntry.saName) {
+            this.newEntry.saName = cached.data.saName;
+          }
+          this.activitesHorsLigne = true;
+        } else {
+          this.availableActivites = [];
+        }
       } finally {
         this.loadingActivites = false;
         this.loadingSaName = false;
@@ -2561,7 +2643,7 @@ export default {
         this.entreesEnAttente = this.entreesEnAttente.filter(
           (e) => e.id !== id,
         );
-        alert("✅ Entrée validée avec succès !");
+        alert(" Entrée validée avec succès !");
       } catch (error) {
         console.error("Erreur validation:", error);
         alert("Erreur : " + (error.response?.data?.error || error.message));
@@ -2666,7 +2748,7 @@ export default {
           teacher_id: this.user.id,
           sa_number: this.newEntry.saNumber,
           sa_name: this.newEntry.saName,
-          activites: this.finalActivites, // Utilisation des activités combinées
+          activites: this.finalActivites,
           activites_status: this.activitesStatus,
           contenu: this.newEntry.contenu,
           date_cours: this.newEntry.dateCours,
@@ -2681,11 +2763,29 @@ export default {
 
         console.log("📤 Envoi entrée cahier:", entryData);
 
-        await api.post("/cahier/cahier-entries", entryData);
-        await this.fetchCahierEntries();
-        this.resetEntryForm();
-        this.showForm = false;
-        alert("Entrée ajoutée avec succès !");
+        try {
+          await api.post("/cahier/cahier-entries", entryData);
+          await this.fetchCahierEntries();
+          this.resetEntryForm();
+          this.showForm = false;
+          alert(" Entrée ajoutée avec succès !");
+        } catch (error) {
+          const isNetworkError = !error.response;
+
+          if (isNetworkError) {
+            //  pas de connexion : mise en file d'attente locale
+            await queueEntry(entryData);
+            this.resetEntryForm();
+            this.showForm = false;
+            alert(
+              "📴 Vous êtes hors ligne. Votre entrée a été enregistrée localement " +
+                "et sera envoyée automatiquement dès le retour de la connexion.",
+            );
+          } else {
+            console.error("Erreur ajout entrée:", error);
+            alert("Erreur: " + (error.response?.data?.error || error.message));
+          }
+        }
       } catch (error) {
         console.error("Erreur ajout entrée:", error);
         alert("Erreur: " + (error.response?.data?.error || error.message));
@@ -2693,7 +2793,7 @@ export default {
     },
 
     /**
-     * ✅ Éditer une entrée (avec statuts)
+     * Éditer une entrée (avec statuts)
      */
     async editEntry(entry) {
       this.newEntry = {
@@ -2742,8 +2842,12 @@ export default {
       this.showForm = true;
     },
 
+    async refreshPendingLocalEntries() {
+      this.pendingLocalEntries = await getPendingEntries();
+    },
+
     /**
-     * ✅ Mettre à jour une entrée
+     * Mettre à jour une entrée
      */
     async updateEntry() {
       try {
@@ -2824,7 +2928,7 @@ export default {
       this.historyEntryId = null;
     },
 
-    // ✅ NOUVELLES MÉTHODES POUR LA PROGRESSION
+    // NOUVELLES MÉTHODES POUR LA PROGRESSION
     selectProgressionClass(classId) {
       this.selectedProgressionClassId = classId;
       this.selectedProgressionDisciplineId = null;
