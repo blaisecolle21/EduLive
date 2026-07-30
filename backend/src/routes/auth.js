@@ -61,7 +61,7 @@ const loginLimiter = rateLimit({
 // ==========================================
 router.post("/login", loginLimiter, async (req, res) => {
   try {
-    const { email, mot_de_passe, rememberMe } = req.body;
+    const { email, mot_de_passe, rememberMe, force } = req.body;
 
     // Trouver l'utilisateur EN INCLUANT son Rôle et ses Permissions
     const user = await models.User.findOne({
