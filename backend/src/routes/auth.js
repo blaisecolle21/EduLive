@@ -148,6 +148,7 @@ router.post("/login", loginLimiter, async (req, res) => {
         email: user.email,
         role: user.Role ? user.Role.name : null,
         permissions: userPermissions, // Nécessaire pour checkPermission.js
+        session_id: sessionId,
       },
       process.env.JWT_SECRET,
       { expiresIn },
