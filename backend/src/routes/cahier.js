@@ -1045,7 +1045,7 @@ router.patch(
 
       await entry.update({ activites_status: currentStatus });
 
-      console.log("✅ Statut activité mis à jour:", { activite, status });
+      console.log(" Statut activité mis à jour:", { activite, status });
 
       res.json({
         message: "Statut mis à jour",
@@ -1190,7 +1190,7 @@ router.get(
           saName = prog.situation_apprentissage;
         }
 
-        // ✅ Accumuler les taux prévus
+        //  Accumuler les taux prévus
         if (prog.taux_prevu) {
           tauxPrevu += parseFloat(prog.taux_prevu);
         }
@@ -1886,7 +1886,7 @@ router.get(
   },
 );
 
-// Le responsable consulte ses propres soumissions (avec statut)
+// 30. Le responsable consulte ses propres soumissions (avec statut)
 router.get(
   "/responsable/mes-entrees",
   authMiddleware,
@@ -1922,7 +1922,7 @@ router.get(
   },
 );
 
-//Resoumission après rejet
+//31. Resoumission après rejet
 router.put(
   "/cahier-entries/:id/resoumettre",
   authMiddleware,
@@ -1984,4 +1984,109 @@ router.put(
     }
   },
 );
+
+// ============================================================
+// 32. LISTER LES RESPONSABLES ET LEUR CLASSE ASSIGNÉE
+// ============================================================
+router.get(
+  "/responsables",
+  authMiddleware,
+  checkPermission("responsables:manage"),
+  async (req, res) => {
+    try {
+      const responsables = await models.User.findAll({
+        where: { role_id: 3 },
+        attributes: ["id", "nom", "prenoms", "email", "est_actif"],
+        include: [
+          {
+            model: models.ResponsableClasse,
+            as: "ResponsableClasse",
+            include: [
+              {
+                model: models.Classe,
+                as: "classe",
+                attributes: ["id", "nom", "promotion"],
+              },
+            ],
+          },
+        ],
+      });
+      res.json(responsables);
+    } catch (error) {
+      console.error("❌ Erreur récupération responsables:", error);
+      res.status(500).json({ error: error.message });
+    }
+  },
+);
+
+// ============================================================
+// 33. ASSIGNER (OU RÉASSIGNER) UNE CLASSE À UN RESPONSABLE
+// ============================================================
+router.post(
+  "/responsable-classe",
+  authMiddleware,
+  checkPermission("responsables:manage"),
+  async (req, res) => {
+    try {
+      const { user_id, classe_id } = req.body;
+      if (!user_id || !classe_id) {
+        return res
+          .status(400)
+          .json({ error: "user_id et classe_id sont requis." });
+      }
+
+      const user = await models.User.findByPk(user_id);
+      if (!user || parseInt(user.role_id) !== 3) {
+        return res
+          .status(400)
+          .json({ error: "Cet utilisateur n'est pas un responsable." });
+      }
+
+      const classe = await models.Classe.findByPk(classe_id);
+      if (!classe) {
+        return res.status(404).json({ error: "Classe non trouvée." });
+      }
+
+      let assignment = await models.ResponsableClasse.findOne({
+        where: { user_id },
+      });
+      if (assignment) {
+        await assignment.update({ classe_id });
+      } else {
+        assignment = await models.ResponsableClasse.create({
+          user_id,
+          classe_id,
+        });
+      }
+
+      res.json({ message: "Classe assignée avec succès", assignment });
+    } catch (error) {
+      console.error("❌ Erreur assignation responsable:", error);
+      res.status(500).json({ error: error.message });
+    }
+  },
+);
+
+// ============================================================
+// 34. RETIRER L'AFFECTATION D'UN RESPONSABLE
+// ============================================================
+router.delete(
+  "/responsable-classe/:userId",
+  authMiddleware,
+  checkPermission("responsables:manage"),
+  async (req, res) => {
+    try {
+      const deleted = await models.ResponsableClasse.destroy({
+        where: { user_id: req.params.userId },
+      });
+      if (!deleted)
+        return res.status(404).json({ error: "Aucune assignation trouvée." });
+      res.json({ message: "Assignation retirée." });
+    } catch (error) {
+      console.error("❌ Erreur suppression assignation:", error);
+      res.status(500).json({ error: error.message });
+    }
+  },
+);
+
 module.exports = router;

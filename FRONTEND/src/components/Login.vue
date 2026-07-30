@@ -337,29 +337,50 @@ export default {
   methods: {
     async login() {
       try {
-        console.log("login attempt");
         const response = await api.post("/auth/login", this.form);
-        console.log("Login response");
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-
-        startSessionTimer(); //  démarre le timer immédiatement après connexion
-
-        // console.log("Token stored");
-        const user = response.data.user; // API renvoie l'utilisateur
-        const roleId = parseInt(user.role_id);
-        if (roleId === 1) {
-          this.$router.push("/dashboard?section=accueil");
-        } else if (roleId === 2) {
-          this.$router.push("/enseignant");
-        } else if (roleId === 3) {
-          this.$router.push("/responsable");
-        } else {
-          this.$router.push("/responsable");
-        }
+        this.handleLoginSuccess(response.data);
       } catch (error) {
-        console.log(import.meta.env.MODE);
-        this.error = error.response?.data?.error || "Erreur de connexion";
+        if (
+          error.response?.status === 409 &&
+          error.response?.data?.error === "SESSION_ACTIVE"
+        ) {
+          const confirmer = confirm(error.response.data.message);
+          if (confirmer) {
+            try {
+              const retryResponse = await api.post("/auth/login", {
+                ...this.form,
+                force: true,
+              });
+              this.handleLoginSuccess(retryResponse.data);
+            } catch (retryError) {
+              this.error =
+                retryError.response?.data?.error || "Erreur de connexion";
+            }
+          }
+        } else {
+          this.error = error.response?.data?.error || "Erreur de connexion";
+        }
+      }
+    },
+
+    handleLoginSuccess(data) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      startSessionTimer();
+      const roleId = parseInt(data.user.role_id);
+
+      if (roleId === 1) {
+        this.$router.push("/dashboard?section=accueil");
+      } else if (roleId === 2) {
+        this.$router.push("/enseignant");
+      } else if (roleId === 3) {
+        this.$router.push("/responsable");
+      } else {
+        // Rôle non reconnu : on ne devine pas, on bloque proprement
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        this.error = " Contactez l'administrateur.";
+        this.$router.push("/login");
       }
     },
   },

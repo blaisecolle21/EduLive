@@ -177,4 +177,66 @@ router.post(
   },
 );
 
+// ==========================================
+// 7. CRÉER UN UTILISATEUR DIRECTEMENT (ADMIN)
+// ==========================================
+router.post(
+  "/",
+  authMiddleware,
+  checkPermission("users:create"),
+  async (req, res) => {
+    try {
+      const {
+        nom,
+        prenoms,
+        email,
+        mot_de_passe,
+        role_id,
+        etablissement_id,
+        telephone,
+      } = req.body;
+
+      if (
+        !nom ||
+        !prenoms ||
+        !email ||
+        !mot_de_passe ||
+        !role_id ||
+        !etablissement_id
+      ) {
+        return res
+          .status(400)
+          .json({ error: "Champs obligatoires manquants." });
+      }
+
+      const existing = await models.User.findOne({ where: { email } });
+      if (existing) {
+        return res.status(400).json({ error: "Cet email est déjà utilisé." });
+      }
+
+      const user = await models.User.create({
+        nom,
+        prenoms,
+        email,
+        mot_de_passe,
+        role_id,
+        etablissement_id,
+        telephone,
+        est_actif: true, // créé directement par l'admin, pas de validation à attendre
+        est_valide: true,
+      });
+
+      res.status(201).json({
+        message: "Utilisateur créé avec succès",
+        user: { id: user.id, email: user.email, role_id: user.role_id },
+      });
+    } catch (error) {
+      console.error("❌ Erreur création utilisateur:", error);
+      res
+        .status(500)
+        .json({ error: "Erreur lors de la création de l'utilisateur." });
+    }
+  },
+);
+
 module.exports = router;

@@ -19,6 +19,17 @@ const sequelize = new Sequelize(
       charset: "utf8mb4",
       collate: "utf8mb4_unicode_ci",
     },
+
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000, // laisse jusqu'à 30s pour obtenir une connexion avant d'abandonner
+      idle: 10000,
+    },
+    retry: {
+      max: 3, // réessaie automatiquement jusqu'à 3 fois en cas d'erreur de connexion
+      match: [/ETIMEDOUT/, /ECONNRESET/, /ECONNREFUSED/],
+    },
     // Désactiver le log SQL en production pour plus de sécurité et de performance
     logging:
       process.env.NODE_ENV === "production"

@@ -78,6 +78,15 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(255),
         allowNull: true,
       },
+
+      session_id: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+      },
+      session_expires_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
       created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,

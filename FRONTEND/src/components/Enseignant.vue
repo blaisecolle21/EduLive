@@ -188,7 +188,7 @@
             class="bg-white p-4 rounded-lg shadow cursor-pointer hover:bg-gray-100 hover:scale-105 transition-transform duration-200 animate-fadeIn"
           >
             <h3 class="text-xl font-semibold flex items-center gap-2">
-              📘 {{ classe.nom }} ({{ classe.promotion }})
+              {{ classe.nom }} ({{ classe.promotion }})
             </h3>
             <span
               class="inline-block mt-2 bg-teal-100 text-blue-700 px-2 py-1 rounded-full text-xs"
@@ -220,7 +220,7 @@
             @click="openAddEntryForm"
             class="w-full md:w-auto bg-green-500 text-white p-2 rounded hover:bg-green-600 mb-4 cursor-pointer"
           >
-            ➕ Ajouter une entrée
+            Ajouter une entrée
           </button>
 
           <!-- Debug info (à supprimer après résolution) -->
@@ -238,8 +238,8 @@
             class="bg-yellow-50 border border-yellow-200 rounded p-4 mb-4"
           >
             <p class="text-yellow-800">
-              📝 Aucune entrée pour cette classe. Cliquez sur "Ajouter une
-              entrée" pour créer votre première entrée.
+              Aucune entrée pour cette classe. Cliquez sur "Ajouter une entrée"
+              pour créer votre première entrée.
             </p>
           </div>
 
@@ -353,7 +353,7 @@
             <div
               class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg shadow"
             >
-              <h3 class="text-lg font-semibold mb-3">📊 Progression Globale</h3>
+              <h3 class="text-lg font-semibold mb-3">Progression Globale</h3>
 
               <div v-if="selectedClassId && newEntry.disciplineId">
                 <div class="flex items-center space-x-3">
@@ -529,7 +529,7 @@
 
                 <!-- Chargement -->
                 <div v-if="loadingActivites" class="mt-2 text-sm text-gray-600">
-                  🔄 Chargement des activités depuis le programme théorique...
+                  Chargement des activités depuis le programme théorique...
                 </div>
 
                 <!-- Aucune activité trouvée -->
@@ -553,8 +553,7 @@
                 >
                   <div class="flex justify-between items-center mb-2">
                     <p class="text-sm text-gray-600">
-                      📚 {{ availableActivites.length }} activité(s)
-                      disponible(s)
+                      {{ availableActivites.length }} activité(s) disponible(s)
                     </p>
                     <p class="text-sm font-medium text-blue-600">
                       Progression: {{ pourcentageRealise }}%
@@ -600,7 +599,7 @@
                           }"
                           class="px-3 py-1 rounded text-xs font-medium hover:opacity-80 transition"
                         >
-                          🔄 En cours
+                          En cours
                         </button>
 
                         <button
@@ -822,7 +821,7 @@
           v-else-if="entreesEnAttente.length === 0"
           class="bg-gray-50 rounded-lg p-8 text-center text-gray-500"
         >
-          ✅ Aucune entrée en attente de validation.
+          Aucune entrée en attente de validation.
         </div>
 
         <div v-else class="space-y-4">
@@ -885,7 +884,7 @@
                 :disabled="processingId === entry.id"
                 class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
               >
-                ✅ Valider
+                Valider
               </button>
               <button
                 v-if="rejetEnCours !== entry.id"
@@ -1161,13 +1160,13 @@
                   "
                   class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
                 >
-                  📝 Ajouter une entrée
+                  Ajouter une entrée
                 </button>
                 <button
                   @click="loadProgressionData"
                   class="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
                 >
-                  🔄 Actualiser
+                  Actualiser
                 </button>
               </div>
             </div>
@@ -1243,7 +1242,7 @@
           class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4"
         >
           <p class="text-sm font-medium text-blue-700">
-            ⏳ {{ pendingLocalEntries.length }} fiche(s) en attente de
+            {{ pendingLocalEntries.length }} fiche(s) en attente de
             synchronisation (créées hors connexion)
           </p>
         </div>
@@ -1353,7 +1352,7 @@
           <div
             class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4"
           >
-            <h2 class="text-2xl font-bold text-gray-800">🔔 Notifications</h2>
+            <h2 class="text-2xl font-bold text-gray-800">Notifications</h2>
             <div class="flex items-center space-x-3">
               <span
                 v-if="stats.non_lues > 0"
@@ -1899,7 +1898,7 @@ import {
   getPendingEntries,
 } from "../db/syncService";
 
-import { isServerReachable } from "../utils/connectivity";
+import { isServerReachable, onReconnect } from "../utils/connectivity";
 
 import { startSessionTimer, stopSessionTimer } from "../utils/session";
 
@@ -2104,6 +2103,7 @@ export default {
           colorClass: "bg-gray-500 text-white",
         },
       ],
+      _unsubscribeReconnect: null,
     };
   },
   computed: {
@@ -2153,9 +2153,9 @@ export default {
         return [];
       }
 
-      console.log("🔍 Filtrage des entrées pour classe:", this.selectedClassId);
-      console.log("📊 Nombre total d'entrées:", this.cahierEntries.length);
-      console.log("👤 User ID:", this.user?.id);
+      console.log(" Filtrage des entrées pour classe:", this.selectedClassId);
+      console.log(" Nombre total d'entrées:", this.cahierEntries.length);
+      console.log(" User ID:", this.user?.id);
 
       // Les entrées sont déjà filtrées par le backend (teacher_id et classe_id)
       // Donc on peut directement retourner toutes les entrées
@@ -2169,7 +2169,7 @@ export default {
         return true; // Garder toutes les entrées car backend a déjà filtré
       });
 
-      console.log("✅ Entrées filtrées:", filtered.length);
+      console.log(" Entrées filtrées:", filtered.length);
       return filtered;
     },
 
@@ -2220,10 +2220,10 @@ export default {
     submitButtonLabel() {
       if (!isServerReachable.value) {
         return this.editingEntry
-          ? "📴 Enregistrer hors ligne"
-          : "📴 Ajouter (hors ligne)";
+          ? "Enregistrer hors ligne"
+          : " Ajouter (hors ligne)";
       }
-      return this.editingEntry ? "✅ Mettre à jour" : "➕ Ajouter";
+      return this.editingEntry ? " Mettre à jour" : " Ajouter";
     },
 
     notificationsFiltrees() {
@@ -2284,13 +2284,6 @@ export default {
       this.loadingClasses = false;
     }
   },
-  beforeUnmount() {
-    stopSessionTimer(); // Nettoyage quand on quitte le composant
-
-    if (this.editor) {
-      this.editor.destroy();
-    }
-  },
 
   async mounted() {
     startSessionTimer(); // Pour démarrer le compte a rebours de la session dès l'ouverture
@@ -2301,6 +2294,26 @@ export default {
       this.chargerProfil(),
       this.refreshPendingLocalEntries(), //  ajout
     ]);
+
+    //  Rafraîchir automatiquement au retour de connexion
+    this._unsubscribeReconnect = onReconnect(async () => {
+      console.log(" Reconnexion détectée — rafraîchissement des données");
+      await Promise.all([
+        this.chargerNotifications(),
+        this.fetchEntreesEnAttente(),
+        this.fetchCahierEntries(),
+        this.refreshPendingLocalEntries(),
+      ]);
+    });
+  },
+
+  beforeUnmount() {
+    stopSessionTimer(); // Nettoyage quand on quitte le composant
+
+    if (this.editor) {
+      if (this._unsubscribeReconnect) this._unsubscribeReconnect();
+      this.editor.destroy();
+    }
   },
 
   methods: {
@@ -2411,7 +2424,7 @@ export default {
     async fetchCahierEntries() {
       try {
         console.log(
-          "📥 Récupération des entrées pour classe:",
+          " Récupération des entrées pour classe:",
           this.selectedClassId,
         );
 
@@ -2425,8 +2438,8 @@ export default {
           params: { classe_id: this.selectedClassId },
         });
 
-        console.log("✅ Entrées reçues du backend:", response.data);
-        console.log("📊 Nombre d'entrées:", response.data.length);
+        console.log("Entrées reçues du backend:", response.data);
+        console.log("Nombre d'entrées:", response.data.length);
 
         this.cahierEntries = response.data;
 
@@ -2554,7 +2567,7 @@ export default {
           },
         });
 
-        console.log("✅ Lots reçus:", response.data);
+        console.log("Lots reçus:", response.data);
 
         const activitesDisponibles = [];
         response.data.lots.forEach((lot) => {
@@ -2571,7 +2584,7 @@ export default {
         }
 
         if (response.data.stats) {
-          console.log("📊 Stats lots:", response.data.stats);
+          console.log(" Stats lots:", response.data.stats);
         }
 
         //  mise en cache pour usage hors ligne
@@ -2586,12 +2599,13 @@ export default {
           },
         );
         console.log(
-          "✅ CACHE ÉCRIT:",
+          " CACHE ÉCRIT:",
           this.selectedClassId,
           this.newEntry.disciplineId,
           this.newEntry.saNumber,
         );
       } catch (error) {
+        const isServerError = error.response?.status === 503;
         console.error("❌ Erreur chargement lots:", error);
 
         //  fallback hors ligne
@@ -2601,7 +2615,7 @@ export default {
           this.newEntry.saNumber,
         );
         console.log(
-          "🔍 CACHE LU:",
+          " CACHE LU:",
           this.selectedClassId,
           this.newEntry.disciplineId,
           this.newEntry.saNumber,
@@ -2616,6 +2630,9 @@ export default {
             this.newEntry.saName = cached.data.saName;
           }
           this.activitesHorsLigne = true;
+          this.messageHorsLigne = isServerError
+            ? " Serveur temporairement indisponible — activités depuis le cache local"
+            : "📴 Hors ligne — activités depuis le cache local";
         } else {
           this.availableActivites = [];
         }
@@ -2737,7 +2754,6 @@ export default {
           alert("Veuillez sélectionner une discipline");
           return;
         }
-
         if (!this.isFormValid) {
           alert("Veuillez remplir tous les champs obligatoires");
           return;
@@ -2761,8 +2777,6 @@ export default {
           taux_prevu_programme: this.newEntry.tauxPrevuProgramme,
         };
 
-        console.log("📤 Envoi entrée cahier:", entryData);
-
         try {
           await api.post("/cahier/cahier-entries", entryData);
           await this.fetchCahierEntries();
@@ -2770,16 +2784,19 @@ export default {
           this.showForm = false;
           alert(" Entrée ajoutée avec succès !");
         } catch (error) {
-          const isNetworkError = !error.response;
+          const isTimeout = error.code === "ECONNABORTED";
+          const isNetworkError = !error.response && !isTimeout;
 
           if (isNetworkError) {
-            //  pas de connexion : mise en file d'attente locale
             await queueEntry(entryData);
             this.resetEntryForm();
             this.showForm = false;
             alert(
-              "📴 Vous êtes hors ligne. Votre entrée a été enregistrée localement " +
-                "et sera envoyée automatiquement dès le retour de la connexion.",
+              "📴 Vous êtes hors ligne. Votre entrée a été enregistrée et sera envoyée automatiquement dès le retour de la connexion.",
+            );
+          } else if (isTimeout) {
+            alert(
+              "La requête a pris trop de temps. Vérifiez si l'entrée a bien été enregistrée avant de réessayer, pour éviter les doublons.",
             );
           } else {
             console.error("Erreur ajout entrée:", error);
@@ -2888,7 +2905,7 @@ export default {
         this.editingEntry = false;
         this.showForm = false;
 
-        alert("✅ Entrée mise à jour avec succès !");
+        alert(" Entrée mise à jour avec succès !");
       } catch (error) {
         console.error("❌ Erreur mise à jour entrée:", error);
         alert("Erreur: " + (error.response?.data?.error || error.message));

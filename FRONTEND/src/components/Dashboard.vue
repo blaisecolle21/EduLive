@@ -82,7 +82,7 @@
             </p>
           </transition>
 
-          <!-- ✅ Un seul menu — supprimer l'ancien <ul> -->
+          <!--  Un seul menu — supprimer l'ancien <ul> -->
           <SidebarItem
             v-for="item in menuItems"
             :key="item.section"
@@ -1483,6 +1483,153 @@
           </transition>
         </div>
 
+        <div
+          v-if="activeSection === 'responsables'"
+          class="max-w-5xl mx-auto space-y-6"
+        >
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-semibold">Gestion des responsables</h2>
+            <button
+              @click="showAddResponsable = !showAddResponsable"
+              class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            >
+              Nouveau responsable
+            </button>
+          </div>
+
+          <!-- Formulaire de création -->
+          <div
+            v-if="showAddResponsable"
+            class="bg-white rounded-xl border p-6 space-y-3"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                v-model="newResponsable.nom"
+                placeholder="Nom"
+                class="border rounded-lg p-2"
+              />
+              <input
+                v-model="newResponsable.prenoms"
+                placeholder="Prénoms"
+                class="border rounded-lg p-2"
+              />
+              <input
+                v-model="newResponsable.email"
+                type="email"
+                placeholder="Email"
+                class="border rounded-lg p-2"
+              />
+              <input
+                v-model="newResponsable.mot_de_passe"
+                type="password"
+                placeholder="Mot de passe"
+                class="border rounded-lg p-2"
+              />
+              <input
+                v-model="newResponsable.telephone"
+                placeholder="Téléphone"
+                class="border rounded-lg p-2"
+              />
+              <input
+                v-model="newResponsable.etablissement_id"
+                type="number"
+                placeholder="ID Établissement"
+                class="border rounded-lg p-2"
+              />
+            </div>
+            <div class="flex gap-2">
+              <button
+                @click="createResponsable"
+                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                Créer
+              </button>
+              <button
+                @click="showAddResponsable = false"
+                class="bg-gray-200 text-gray-700 px-4 py-2 rounded"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+
+          <!-- Liste des responsables -->
+          <div class="bg-white rounded-xl border p-6">
+            <div v-if="loadingResponsables" class="text-gray-500">
+              Chargement...
+            </div>
+            <table v-else class="w-full border-collapse">
+              <thead>
+                <tr class="bg-gray-50 border-b">
+                  <th
+                    class="p-3 text-left text-xs font-semibold text-gray-500 uppercase"
+                  >
+                    Nom
+                  </th>
+                  <th
+                    class="p-3 text-left text-xs font-semibold text-gray-500 uppercase"
+                  >
+                    Email
+                  </th>
+                  <th
+                    class="p-3 text-left text-xs font-semibold text-gray-500 uppercase"
+                  >
+                    Classe assignée
+                  </th>
+                  <th
+                    class="p-3 text-left text-xs font-semibold text-gray-500 uppercase"
+                  >
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr v-for="r in responsables" :key="r.id">
+                  <td class="p-3">{{ r.prenoms }} {{ r.nom }}</td>
+                  <td class="p-3">{{ r.email }}</td>
+                  <td class="p-3">
+                    <span
+                      v-if="r.ResponsableClasse?.classe"
+                      class="text-teal-700 font-medium"
+                    >
+                      {{ r.ResponsableClasse.classe.nom }} ({{
+                        r.ResponsableClasse.classe.promotion
+                      }})
+                    </span>
+                    <span v-else class="text-gray-400 italic">Non assigné</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="flex items-center gap-2">
+                      <select
+                        v-model="selectedClasseForResponsable[r.id]"
+                        class="border rounded p-1.5 text-sm"
+                      >
+                        <option value="" disabled>-- Classe --</option>
+                        <option v-for="c in classes" :key="c.id" :value="c.id">
+                          {{ c.nom }} ({{ c.promotion }})
+                        </option>
+                      </select>
+                      <button
+                        @click="assignerClasse(r.id)"
+                        class="text-xs bg-teal-600 text-white px-3 py-1.5 rounded hover:bg-teal-700"
+                      >
+                        Assigner
+                      </button>
+                      <button
+                        v-if="r.ResponsableClasse"
+                        @click="retirerAssignation(r.id)"
+                        class="text-xs bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200"
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Section Progression Globale -->
         <div v-if="activeSection === 'progression'" class="mt-4">
           <div
@@ -2340,7 +2487,7 @@
                   @click="chargerNotifications"
                   class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
                 >
-                  🔄 Actualiser
+                  Actualiser
                 </button>
               </div>
             </div>
@@ -2671,6 +2818,7 @@ import {
 } from "../db/syncService";
 
 import SidebarItem from "./SidebarItem.vue";
+import { onReconnect } from "../utils/connectivity";
 
 import { startSessionTimer, stopSessionTimer } from "../utils/session";
 
@@ -2727,6 +2875,19 @@ export default {
       classes: [],
       disciplines: [],
 
+      responsables: [],
+      loadingResponsables: false,
+      showAddResponsable: false,
+      newResponsable: {
+        nom: "",
+        prenoms: "",
+        email: "",
+        mot_de_passe: "",
+        telephone: "",
+        etablissement_id: "",
+      },
+      selectedClasseForResponsable: {}, // { userId: classeId } pour le select d'assignation
+
       activeClassTab: null,
       activeAffectationTab: null,
       activeUserTab: null, // null = aucun tableau affiché par défaut
@@ -2735,7 +2896,7 @@ export default {
       showSidebar: window.innerWidth >= 768,
       activeSection: "accueil",
 
-      // ✅ Définition centralisée du menu
+      //  Définition centralisée du menu
       menuItems: [
         {
           section: "users",
@@ -2753,6 +2914,12 @@ export default {
           section: "affectations",
           label: "Gestion des affectations",
           icon: UserPlusIcon,
+          badge: null,
+        },
+        {
+          section: "responsables",
+          label: "Gestion des responsables",
+          icon: UserGroupIcon,
           badge: null,
         },
         {
@@ -2852,6 +3019,8 @@ export default {
       enseignantsCibles: [],
       titrePersonnalise: "",
       messagePersonnalise: "",
+
+      _unsubscribeReconnect: null,
     };
   },
 
@@ -2937,20 +3106,27 @@ export default {
         await this.fetchEnseignants();
         await this.fetchAffectations();
         await this.fetchProgressionOverview();
+        await this.fetchResponsables();
       }
     } catch (error) {
-      const isAuthError = error.response?.status === 401 || error.response?.status === 403;
-    const isNetworkError = !error.response;
+      const isAuthError =
+        error.response?.status === 401 || error.response?.status === 403;
+      const isNetworkError = !error.response;
 
-    console.error("Erreur chargement profil:", error.response?.data || error.message);
+      console.error(
+        "Erreur chargement profil:",
+        error.response?.data || error.message,
+      );
 
-    if (isAuthError) {
-      this.$router.push("/login");
-    } else if (isNetworkError) {
-      // Hors ligne : on ne déconnecte pas, on tente de continuer avec les données en cache
-      console.warn("⚠️ Hors ligne au chargement — utilisation des données locales si disponibles");
-    }
-    // Pour toute autre erreur (500 etc.), on ne déconnecte pas non plus
+      if (isAuthError) {
+        this.$router.push("/login");
+      } else if (isNetworkError) {
+        // Hors ligne : on ne déconnecte pas, on tente de continuer avec les données en cache
+        console.warn(
+          "⚠️ Hors ligne au chargement — utilisation des données locales si disponibles",
+        );
+      }
+      // Pour toute autre erreur (500 etc.), on ne déconnecte pas non plus
     }
   },
 
@@ -2964,10 +3140,23 @@ export default {
       this.chargerModifications(),
       this.chargerPendingUsers(),
     ]);
+
+    // Rafraîchir automatiquement au retour de connexion
+    this._unsubscribeReconnect = onReconnect(async () => {
+      console.log(" Reconnexion détectée — rafraîchissement des données");
+      await Promise.all([
+        this.chargerNotifications(),
+        this.chargerStatistiques(),
+        this.chargerEnseignants(),
+        this.chargerModifications(),
+        this.chargerPendingUsers(),
+      ]);
+    });
   },
 
   beforeUnmount() {
     stopSessionTimer(); //  nettoyage quand on quitte le composant
+    if (this._unsubscribeReconnect) this._unsubscribeReconnect();
   },
 
   methods: {
@@ -3618,7 +3807,7 @@ export default {
         );
 
         alert(
-          `✅ ${response.data.nombre_notifications} notification(s) envoyée(s) avec succès !`,
+          ` ${response.data.nombre_notifications} notification(s) envoyée(s) avec succès !`,
         );
 
         this.fermerModal();
@@ -3666,6 +3855,68 @@ export default {
         admin_personnalisée: "✉️ Personnalisée",
       };
       return labels[type] || type;
+    },
+
+    async fetchResponsables() {
+      this.loadingResponsables = true;
+      try {
+        const response = await api.get("/cahier/responsables");
+        this.responsables = response.data;
+      } catch (error) {
+        console.error("Erreur récupération responsables:", error);
+      } finally {
+        this.loadingResponsables = false;
+      }
+    },
+
+    async createResponsable() {
+      try {
+        await api.post("/users", {
+          ...this.newResponsable,
+          role_id: 3, // toujours responsable depuis ce formulaire
+        });
+        alert("Responsable créé avec succès !");
+        this.newResponsable = {
+          nom: "",
+          prenoms: "",
+          email: "",
+          mot_de_passe: "",
+          telephone: "",
+          etablissement_id: "",
+        };
+        this.showAddResponsable = false;
+        await this.fetchResponsables();
+      } catch (error) {
+        alert("Erreur : " + (error.response?.data?.error || error.message));
+      }
+    },
+
+    async assignerClasse(userId) {
+      const classeId = this.selectedClasseForResponsable[userId];
+      if (!classeId) {
+        alert("Veuillez sélectionner une classe.");
+        return;
+      }
+      try {
+        await api.post("/cahier/responsable-classe", {
+          user_id: userId,
+          classe_id: classeId,
+        });
+        alert("Classe assignée avec succès !");
+        await this.fetchResponsables();
+      } catch (error) {
+        alert("Erreur : " + (error.response?.data?.error || error.message));
+      }
+    },
+
+    async retirerAssignation(userId) {
+      if (!confirm("Retirer cette affectation ?")) return;
+      try {
+        await api.delete(`/cahier/responsable-classe/${userId}`);
+        await this.fetchResponsables();
+      } catch (error) {
+        alert("Erreur : " + (error.response?.data?.error || error.message));
+      }
     },
 
     formatDate(dateStr) {

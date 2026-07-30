@@ -41,6 +41,14 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ error: "Utilisateur introuvable." });
     }
 
+    // Vérifier que le token correspond à la session active actuelle
+    if (user.session_id !== decoded.session_id) {
+      return res.status(401).json({
+        error:
+          "Session invalide. Vous avez été déconnecté car une connexion a été établie ailleurs.",
+      });
+    }
+
     // On reconstruit req.user en utilisant strictement le role_id de la base de données
     req.user = {
       id: user.id,

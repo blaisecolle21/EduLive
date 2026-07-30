@@ -104,6 +104,34 @@ router.post("/login", loginLimiter, async (req, res) => {
       });
     }
 
+    //  Vérifier si une session est déjà active ailleurs
+    const sessionEncoreValide =
+      user.session_id &&
+      user.session_expires_at &&
+      new Date(user.session_expires_at) > new Date();
+
+    if (sessionEncoreValide && !force) {
+      return res.status(409).json({
+        error: "SESSION_ACTIVE",
+        message:
+          "Une session est déjà active sur un autre appareil ou navigateur. Voulez-vous la fermer et vous connecter ici ?",
+      });
+    }
+
+    // Génère une nouvelle session (invalide automatiquement l'ancienne)
+    const sessionId = crypto.randomBytes(32).toString("hex");
+
+    const expiresIn = rememberMe ? "7d" : "48h"; // Déterminer la durée de validité du token
+    const expiresInMs = rememberMe
+      ? 7 * 24 * 60 * 60 * 1000
+      : 48 * 60 * 60 * 1000;
+
+    await user.update({
+      derniere_connexion: new Date(),
+      session_id: sessionId,
+      session_expires_at: new Date(Date.now() + expiresInMs),
+    });
+
     // Mettre à jour la date de dernière connexion
     await user.update({ derniere_connexion: new Date() });
 
@@ -112,9 +140,6 @@ router.post("/login", loginLimiter, async (req, res) => {
       user.Role && user.Role.permissions
         ? user.Role.permissions.map((p) => p.name)
         : [];
-
-    // Déterminer la durée de validité du token
-    const expiresIn = rememberMe ? "7d" : "1h";
 
     // On injecte le tableau des permissions et le nom du rôle dans le JWT
     const token = jwt.sign(

@@ -8,6 +8,25 @@ export const isServerReachable = ref(true);
 export const pendingCount = ref(0);
 export const syncing = ref(false);
 
+// Système d'abonnement : les composants s'enregistrent pour être
+// notifiés quand la connexion revient ET que la synchro est terminée.
+const reconnectListeners = new Set();
+
+export function onReconnect(callback) {
+  reconnectListeners.add(callback);
+  return () => reconnectListeners.delete(callback); // pour se désabonner
+}
+
+function notifyReconnectListeners() {
+  reconnectListeners.forEach((cb) => {
+    try {
+      cb();
+    } catch (e) {
+      console.error("Erreur dans un listener onReconnect:", e);
+    }
+  });
+}
+
 async function checkServerReachable() {
   try {
     await api.get("/health", { timeout: 5000 });
@@ -24,14 +43,16 @@ export async function refreshPendingCount() {
 async function runSync() {
   if (syncing.value) return; // évite les syncs concurrentes
   const count = await countPending();
-  if (count === 0) return;
 
   syncing.value = true;
   try {
-    await syncPendingEntries();
+    if (count > 0) {
+      await syncPendingEntries();
+    }
   } finally {
     syncing.value = false;
     await refreshPendingCount();
+    notifyReconnectListeners();
   }
 }
 
