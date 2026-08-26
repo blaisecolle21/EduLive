@@ -176,18 +176,10 @@
                     'bg-yellow-100 text-yellow-700':
                       entry.statut === 'en_attente',
                     'bg-green-100 text-green-700': entry.statut === 'validee',
-                    'bg-red-100 text-red-700': entry.statut === 'rejetee',
                   }"
                 >
                   {{ statutLabel(entry.statut) }}
                 </span>
-                <button
-                  v-if="entry.statut === 'rejetee'"
-                  @click="openResubmitForm(entry)"
-                  class="text-xs bg-orange-500 text-white px-3 py-1.5 rounded hover:bg-orange-600"
-                >
-                  Corriger
-                </button>
               </div>
             </div>
           </div>
@@ -200,8 +192,6 @@
             mode="submit"
             :current-user-id="user.id"
             :target-teacher-id="enseignantIdDe(selectedDiscipline)"
-            :entry-to-edit="entryToResubmit"
-            :is-resubmit="!!entryToResubmit"
             @success="onFormSuccess"
             @cancel="closeForm"
           />
@@ -242,6 +232,8 @@ import QRCode from "qrcode";
 import CahierEntryForm from "./CahierEntryForm.vue";
 import SidebarItem from "./SidebarItem.vue";
 import { onReconnect } from "../utils/connectivity";
+import { clearAllLocalData } from "../db/syncService";
+import { clearCacheKey } from "../utils/cacheCrypto";
 import { startSessionTimer, stopSessionTimer } from "../utils/session";
 import {
   AcademicCapIcon,
@@ -314,7 +306,6 @@ export default {
       this.mesEntrees = [];
       this.showForm = false;
       this.qrCodeUrl = null;
-      this.entryToResubmit = null;
     },
     async fetchMesEntrees() {
       this.loadingEntries = true;
@@ -330,17 +321,13 @@ export default {
       }
     },
     openAddForm() {
-      this.entryToResubmit = null;
       this.showForm = true;
     },
-    openResubmitForm(entry) {
-      this.entryToResubmit = entry;
-      this.showForm = true;
-    },
+
     closeForm() {
       this.showForm = false;
       this.qrCodeUrl = null;
-      this.entryToResubmit = null;
+
       this.fetchMesEntrees();
     },
     async onFormSuccess(data) {
@@ -355,11 +342,7 @@ export default {
     },
     statutLabel(statut) {
       return (
-        {
-          en_attente: " En attente",
-          validee: " Validée",
-          rejetee: " Rejetée",
-        }[statut] || statut
+        { en_attente: " En attente", validee: " Validée" }[statut] || statut
       );
     },
     formatDate(date) {
@@ -367,9 +350,22 @@ export default {
       return new Date(date).toLocaleDateString("fr-FR");
     },
     logout() {
+      if (this.pendingCount > 0) {
+        const confirmer = confirm(
+          `⚠️ ${this.pendingCount} entrée(s) en attente de synchronisation. Se déconnecter maintenant les supprimera définitivement. Continuer ?`,
+        );
+        if (!confirmer) return;
+      }
+
+      if (!isServerReachable.value) {
+        const confirmer = confirm(" Vous êtes hors ligne...");
+        if (!confirmer) return;
+      }
       stopSessionTimer();
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      clearAllLocalData(); // purge le cache local à la déconnexion
+      clearCacheKey(); // purge la clé de chiffrement du cache
       this.$router.push("/login");
     },
   },

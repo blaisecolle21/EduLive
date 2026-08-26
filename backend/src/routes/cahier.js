@@ -1787,35 +1787,45 @@ router.patch(
 );
 
 // ============================================================
-// 28. REJETER UNE ENTRÉE SOUMISE
+// 28. MODIFIER LE CONTENU D'UNE SOUMISSION PUIS LA VALIDER (ENSEIGNANT)
 // ============================================================
 router.patch(
-  "/cahier-entries/:id/rejeter",
+  "/cahier-entries/:id/modifier-et-valider",
   authMiddleware,
   checkPermission("cahier-entries:validate"),
   async (req, res) => {
     try {
       const { id } = req.params;
-      const { commentaire } = req.body;
+      const {
+        sa_number,
+        sa_name,
+        activites,
+        activites_status,
+        contenu,
+        date_cours,
+        heure_debut,
+        heure_fin,
+        trimestre,
+        mois,
+        semaine_numero,
+      } = req.body;
 
-      if (!commentaire || !commentaire.trim()) {
-        return res
-          .status(400)
-          .json({ error: "Un commentaire de rejet est requis." });
-      }
+      const entry = await models.CahierEntry.findByPk(id, {
+        include: [
+          {
+            model: models.Discipline,
+            as: "discipline",
+            include: [{ model: models.Classe, as: "Classe" }],
+          },
+        ],
+      });
 
-      const entry = await models.CahierEntry.findByPk(id);
-
-      if (!entry) {
-        return res.status(404).json({ error: "Entrée non trouvée" });
-      }
-
+      if (!entry) return res.status(404).json({ error: "Entrée non trouvée" });
       if (entry.statut !== "en_attente") {
         return res
           .status(400)
           .json({ error: "Cette entrée n'est pas en attente de validation." });
       }
-
       if (entry.teacher_id !== req.user.id) {
         return res.status(403).json({
           error: "Vous n'êtes pas l'enseignant responsable de cette entrée.",
@@ -1823,20 +1833,60 @@ router.patch(
       }
 
       await entry.update({
-        statut: "rejetee",
-        commentaire_rejet: commentaire,
+        sa_number,
+        sa_name,
+        activites,
+        activites_status,
+        contenu: sanitizeContenu(contenu),
+        date_cours,
+        heure_debut,
+        heure_fin,
+        trimestre,
+        mois,
+        semaine_numero,
+        statut: "validee",
         valide_par: req.user.id,
         date_validation: new Date(),
+        qr_token: null,
       });
 
-      res.json({ message: "Entrée rejetée", entry });
+      try {
+        const classe = entry.discipline.Classe;
+        const analyse = await progressionAnalyzer.analyserProgression(
+          entry.teacher_id,
+          classe.id,
+          entry.discipline_id,
+        );
+        await models.Notification.create({
+          enseignant_id: entry.teacher_id,
+          type: "auto_progression",
+          categorie: analyse.categorie,
+          titre: analyse.titre,
+          message: analyse.message,
+          classe_id: classe.id,
+          discipline_id: entry.discipline_id,
+          progression_actuelle: analyse.progression_actuelle,
+          ecart_jours: analyse.ecart_jours,
+          semaine_attendue: analyse.semaine_attendue,
+          mois_attendu: analyse.mois_attendu,
+          probleme_chronologie: analyse.probleme_chronologie,
+          details_chronologie: analyse.details_chronologie,
+          email_envoye: false,
+        });
+      } catch (notifError) {
+        console.error(
+          "⚠️ Erreur création notification (non bloquant):",
+          notifError,
+        );
+      }
+
+      res.json({ message: "Entrée modifiée et validée avec succès", entry });
     } catch (error) {
-      console.error("❌ Erreur rejet entrée:", error);
-      res.status(500).json({ error: error.message });
+      console.error("❌ Erreur modification/validation entrée:", error);
+      res.status(500).json({ error: "Une erreur est survenue." });
     }
   },
 );
-
 // ============================================================
 // 29. RÉCUPÉRER UNE ENTRÉE VIA QR CODE (AVEC DOUBLE VÉRIFICATION)
 // ============================================================
@@ -1917,69 +1967,6 @@ router.get(
       res.json(entries);
     } catch (error) {
       console.error("❌ Erreur récupération soumissions responsable:", error);
-      res.status(500).json({ error: error.message });
-    }
-  },
-);
-
-//31. Resoumission après rejet
-router.put(
-  "/cahier-entries/:id/resoumettre",
-  authMiddleware,
-  checkPermission("cahier-entries:submit"),
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const entry = await models.CahierEntry.findByPk(id);
-
-      if (!entry) return res.status(404).json({ error: "Entrée non trouvée" });
-      if (entry.soumis_par !== req.user.id) {
-        return res
-          .status(403)
-          .json({ error: "Vous n'êtes pas l'auteur de cette soumission." });
-      }
-      if (entry.statut !== "rejetee") {
-        return res
-          .status(400)
-          .json({ error: "Seule une entrée rejetée peut être resoumise." });
-      }
-
-      const {
-        sa_number,
-        sa_name,
-        activites,
-        activites_status,
-        contenu,
-        date_cours,
-        heure_debut,
-        heure_fin,
-        trimestre,
-        mois,
-        semaine_numero,
-      } = req.body;
-
-      const qrToken = require("crypto").randomBytes(32).toString("hex");
-
-      await entry.update({
-        sa_number,
-        sa_name,
-        activites,
-        activites_status,
-        contenu,
-        date_cours,
-        heure_debut,
-        heure_fin,
-        trimestre,
-        mois,
-        semaine_numero,
-        statut: "en_attente",
-        commentaire_rejet: null,
-        qr_token: qrToken,
-      });
-
-      res.json({ message: "Entrée resoumise avec succès", entry });
-    } catch (error) {
-      console.error("❌ Erreur resoumission entrée:", error);
       res.status(500).json({ error: error.message });
     }
   },

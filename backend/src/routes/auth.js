@@ -9,6 +9,12 @@ const { Op } = require("sequelize");
 const emailService = require("../services/emailService");
 const rateLimit = require("express-rate-limit");
 
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // 5 tentatives de code max / 15 min
+  message: { error: "Trop de tentatives. Réessayez plus tard." },
+});
+
 // Route d'inscription publique (accessible à tous)
 router.post("/register", async (req, res) => {
   try {
@@ -104,7 +110,74 @@ router.post("/login", loginLimiter, async (req, res) => {
       });
     }
 
-    //  Vérifier si une session est déjà active ailleurs
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await user.update({
+      otp_code: otp,
+      otp_expires_at: new Date(Date.now() + 10 * 60 * 1000),
+    });
+    await emailService.envoyerCodeVerification(user.email, otp);
+
+    const pendingToken = jwt.sign(
+      { id: user.id, purpose: "otp_pending" },
+      process.env.JWT_SECRET,
+      { expiresIn: "10m" },
+    );
+
+    res.json({
+      requiresOtp: true,
+      pendingToken,
+      message: "Un code de vérification a été envoyé à votre adresse email.",
+    });
+  } catch (error) {
+    console.error("❌ Erreur login:", error);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+//  Vérifier si une session est déjà active ailleurs
+
+router.post("/verify-otp", otpLimiter, async (req, res) => {
+  try {
+    const { pendingToken, code, rememberMe, force } = req.body;
+    if (!pendingToken || !code)
+      return res.status(400).json({ error: "Requête invalide." });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(pendingToken, process.env.JWT_SECRET);
+    } catch {
+      return res
+        .status(401)
+        .json({ error: "Session de connexion expirée, veuillez recommencer." });
+    }
+    if (decoded.purpose !== "otp_pending")
+      return res.status(401).json({ error: "Requête invalide." });
+
+    const user = await models.User.findByPk(decoded.id, {
+      include: [
+        {
+          model: models.Role,
+          as: "Role",
+          include: [
+            {
+              model: models.Permission,
+              as: "permissions",
+              attributes: ["name"],
+              through: { attributes: [] },
+            },
+          ],
+        },
+      ],
+    });
+    if (!user)
+      return res.status(401).json({ error: "Utilisateur introuvable." });
+    if (!user.otp_code || user.otp_code !== code)
+      return res.status(401).json({ error: "Code de vérification incorrect." });
+    if (!user.otp_expires_at || new Date(user.otp_expires_at) < new Date()) {
+      return res
+        .status(401)
+        .json({ error: "Code expiré. Veuillez vous reconnecter." });
+    }
     const sessionEncoreValide =
       user.session_id &&
       user.session_expires_at &&
@@ -115,6 +188,7 @@ router.post("/login", loginLimiter, async (req, res) => {
         error: "SESSION_ACTIVE",
         message:
           "Une session est déjà active sur un autre appareil ou navigateur. Voulez-vous la fermer et vous connecter ici ?",
+        pendingToken,
       });
     }
 
@@ -170,7 +244,7 @@ router.post("/login", loginLimiter, async (req, res) => {
 
     res.json({ token, user: userResponse });
   } catch (error) {
-    console.error("❌ Erreur login:", error);
+    console.error("❌ Erreur vérification OTP:", error);
     res.status(500).json({ error: "Erreur serveur, veuillez réessayer." });
   }
 });

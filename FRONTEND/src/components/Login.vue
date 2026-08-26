@@ -167,7 +167,7 @@
                 </div>
 
                 <!-- Form -->
-                <form @submit.prevent="login" class="space-y-5">
+                <form v-if="!otpStep" @submit.prevent="login" class="space-y-5">
                   <!-- Email Field -->
                   <div class="group">
                     <label
@@ -290,6 +290,26 @@
                   </button>
                 </form>
 
+                <form v-else @submit.prevent="verifyOtp(false)">
+                  <p class="text-sm text-gray-600 mb-3">
+                    Un code a été envoyé à votre email.
+                  </p>
+                  <input
+                    v-model="otpCode"
+                    type="text"
+                    maxlength="6"
+                    placeholder="Code à 6 chiffres"
+                    class="w-full p-2 border rounded text-center text-2xl tracking-widest"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    class="w-full bg-blue-500 text-white p-2 rounded mt-3"
+                  >
+                    Vérifier
+                  </button>
+                </form>
+
                 <!-- Error Message -->
                 <div
                   v-if="error"
@@ -332,33 +352,47 @@ export default {
         rememberMe: false,
       },
       error: null,
+      otpStep: false,
+      otpCode: "",
+      pendingToken: null,
     };
   },
   methods: {
     async login() {
       try {
         const response = await api.post("/auth/login", this.form);
+        if (response.data.requiresOtp) {
+          this.pendingToken = response.data.pendingToken;
+          this.otpStep = true;
+          this.error = null;
+        }
+        // Pas de "else" : le login ne renvoie plus jamais de token directement,
+        // il déclenche toujours l'étape OTP désormais.
+      } catch (error) {
+        this.error = error.response?.data?.error || "Erreur de connexion";
+      }
+    },
+
+    async verifyOtp(force = false) {
+      try {
+        const response = await api.post("/auth/verify-otp", {
+          pendingToken: this.pendingToken,
+          code: this.otpCode,
+          rememberMe: this.form.rememberMe,
+          force,
+        });
         this.handleLoginSuccess(response.data);
       } catch (error) {
         if (
           error.response?.status === 409 &&
           error.response?.data?.error === "SESSION_ACTIVE"
         ) {
-          const confirmer = confirm(error.response.data.message);
-          if (confirmer) {
-            try {
-              const retryResponse = await api.post("/auth/login", {
-                ...this.form,
-                force: true,
-              });
-              this.handleLoginSuccess(retryResponse.data);
-            } catch (retryError) {
-              this.error =
-                retryError.response?.data?.error || "Erreur de connexion";
-            }
+          if (confirm(error.response.data.message)) {
+            this.pendingToken = error.response.data.pendingToken;
+            await this.verifyOtp(true);
           }
         } else {
-          this.error = error.response?.data?.error || "Erreur de connexion";
+          this.error = error.response?.data?.error || "Code invalide";
         }
       }
     },
@@ -377,8 +411,7 @@ export default {
         this.$router.push("/responsable");
       } else {
         // Rôle non reconnu : on ne devine pas, on bloque proprement
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        localStorage.clear();
         this.error = " Contactez l'administrateur.";
         this.$router.push("/login");
       }

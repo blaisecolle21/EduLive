@@ -1,5 +1,6 @@
 import { db } from "./offlineDb";
 import api from "../api";
+import { encryptData, decryptData } from "../utils/cacheCrypto";
 
 /**
  * Enregistre une entrée de cahier de texte en file d'attente locale.
@@ -8,6 +9,7 @@ import api from "../api";
 export async function queueEntry(entryData) {
   // Convertit les objets réactifs Vue (Proxy) en objet JS plat, clonable par IndexedDB
   const plainData = JSON.parse(JSON.stringify(entryData));
+  const encrypted = await encryptData(plainData);
 
   const localId = await db.pendingEntries.add({
     payload: plainData,
@@ -35,6 +37,10 @@ export async function countPending() {
 async function trySyncOne(item) {
   await db.pendingEntries.update(item.localId, { status: "syncing" });
   try {
+    const payload = await decryptData(item.payload);
+    if (!payload)
+      throw new Error("Impossible de déchiffrer l'entrée en attente.");
+
     await api.post("/cahier/cahier-entries", item.payload);
     await db.pendingEntries.delete(item.localId);
     return { success: true };
@@ -74,17 +80,22 @@ export async function syncPendingEntries(onProgress) {
  * À appeler dès qu'on est en ligne et qu'on charge les activités normalement.
  */
 export async function cacheActivites(classeId, disciplineId, saNumber, data) {
+  const encrypted = await encryptData(data);
   await db.activitesCache.put({
     classeId,
     disciplineId,
     saNumber,
-    data,
+    encrypted,
     cachedAt: new Date().toISOString(),
   });
 }
 
 export async function getCachedActivites(classeId, disciplineId, saNumber) {
-  return db.activitesCache.get([classeId, disciplineId, saNumber]);
+  const row = await db.activitesCache.get([classeId, disciplineId, saNumber]);
+  if (!row) return null;
+  const data = await decryptData(row.encrypted);
+  if (!data) return null;
+  return { ...row, data };
 }
 
 /**
@@ -115,8 +126,16 @@ export async function getCachedEntries(disciplineId) {
  * Cache la vue globale de toutes les entrées (admin uniquement)
  */
 export async function cacheAdminEntries(entries) {
-  await db.adminEntriesCache.clear(); // on remplace entièrement à chaque rechargement en ligne
-  await db.adminEntriesCache.bulkPut(entries);
+  await db.adminEntriesCache.clear();
+  const rows = await Promise.all(
+    entries.map(async (e) => ({
+      id: e.id,
+      discipline_id: e.discipline_id,
+      teacher_id: e.teacher_id,
+      encrypted: await encryptData(e),
+    })),
+  );
+  await db.adminEntriesCache.bulkPut(rows);
   await db.metaCache.put({
     key: "adminEntriesLastSync",
     value: new Date().toISOString(),
@@ -126,7 +145,11 @@ export async function cacheAdminEntries(entries) {
 //clear() avant bulkPut évite d'accumuler des entrées supprimées côté serveur qui resteraient fantômes dans le cache local.
 
 export async function getCachedAdminEntries() {
-  return db.adminEntriesCache.toArray();
+  const rows = await db.adminEntriesCache.toArray();
+  const decrypted = await Promise.all(
+    rows.map((r) => decryptData(r.encrypted)),
+  );
+  return decrypted.filter(Boolean);
 }
 
 export async function getAdminEntriesLastSync() {
@@ -139,10 +162,15 @@ export async function getAdminEntriesLastSync() {
  * On attache classeId manuellement pour pouvoir filtrer hors ligne.
  */
 export async function cacheEntriesForClasse(classeId, entries) {
-  const enriched = entries.map((e) => ({ ...e, classeId }));
-  // on retire d'abord les anciennes entrées de cette classe pour éviter les doublons obsolètes
+  const rows = await Promise.all(
+    entries.map(async (e) => ({
+      id: e.id,
+      classeId,
+      encrypted: await encryptData({ ...e, classeId }),
+    })),
+  );
   await db.entriesCache.where("classeId").equals(classeId).delete();
-  await db.entriesCache.bulkPut(enriched);
+  await db.entriesCache.bulkPut(rows);
   await db.metaCache.put({
     key: `entriesLastSync_${classeId}`,
     value: new Date().toISOString(),
@@ -150,13 +178,17 @@ export async function cacheEntriesForClasse(classeId, entries) {
 }
 
 export async function getCachedEntriesForClasse(classeId, maxAgeDays = 60) {
-  const all = await db.entriesCache
+  const rows = await db.entriesCache
     .where("classeId")
     .equals(classeId)
     .toArray();
+  const decrypted = (
+    await Promise.all(rows.map((r) => decryptData(r.encrypted)))
+  ).filter(Boolean);
+
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - maxAgeDays);
-  return all
+  return decrypted
     .filter((e) => new Date(e.date_cours) >= cutoff)
     .sort((a, b) => new Date(b.date_cours) - new Date(a.date_cours));
 }
@@ -164,4 +196,14 @@ export async function getCachedEntriesForClasse(classeId, maxAgeDays = 60) {
 export async function getEntriesLastSync(classeId) {
   const meta = await db.metaCache.get(`entriesLastSync_${classeId}`);
   return meta?.value || null;
+}
+
+export async function clearAllLocalData() {
+  await db.pendingEntries.clear();
+  await db.activitesCache.clear();
+  await db.classesCache.clear();
+  await db.disciplinesCache.clear();
+  await db.entriesCache.clear();
+  await db.adminEntriesCache.clear();
+  await db.metaCache.clear();
 }

@@ -301,6 +301,30 @@ class EmailService {
     return result.success;
   }
 
+  // Code de vérification pour la connexion (OTP)
+  async envoyerCodeVerification(email, code) {
+    try {
+      const mailOptions = {
+        from: `"Plateforme Cahier de Texte" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "🔐 Votre code de vérification",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto;">
+            <h2 style="color: #0d9488;">Code de vérification</h2>
+            <p>Voici votre code pour finaliser votre connexion :</p>
+            <p style="font-size: 32px; font-weight: bold; letter-spacing: 6px; text-align: center; background: #f0fdfa; padding: 16px; border-radius: 8px;">${code}</p>
+            <p style="color: #6b7280; font-size: 13px;">Ce code expire dans 10 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+          </div>
+        `,
+      };
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log("Code OTP envoyé:", info.messageId);
+      return true;
+    } catch (error) {
+      console.error("❌ Erreur envoi code OTP:", error);
+      return false;
+    }
+  }
   /**
    * Template HTML pour la réinitialisation de mot de passe
    */

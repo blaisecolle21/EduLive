@@ -84,7 +84,7 @@
         </label>
 
         <div v-if="loadingActivites" class="mt-2 text-sm text-gray-600">
-          🔄 Chargement des activités depuis le programme théorique...
+          Chargement des activités depuis le programme théorique...
         </div>
         <div
           v-if="activitesHorsLigne"
@@ -517,7 +517,7 @@ export default {
       if (!this.newEntry.dateCours) return;
       const date = new Date(this.newEntry.dateCours);
       const months = [
-        "SEPT",
+      "SEPT",
         "OCT",
         "NOV",
         "DEC",
@@ -527,6 +527,8 @@ export default {
         "AVRIL",
         "MAI",
         "JUIN",
+       
+        
       ];
       this.newEntry.mois = months[date.getMonth()];
     },

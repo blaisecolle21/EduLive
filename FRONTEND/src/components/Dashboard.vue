@@ -2820,6 +2820,9 @@ import {
 import SidebarItem from "./SidebarItem.vue";
 import { onReconnect } from "../utils/connectivity";
 
+import { clearAllLocalData } from "../db/syncService";
+import { clearCacheKey } from "../utils/cacheCrypto";
+
 import { startSessionTimer, stopSessionTimer } from "../utils/session";
 
 import {
@@ -3362,9 +3365,23 @@ export default {
     },
 
     logout() {
+      if (this.pendingCount > 0) {
+        const confirmer = confirm(
+          `⚠️ ${this.pendingCount} entrée(s) en attente de synchronisation. Se déconnecter maintenant les supprimera définitivement. Continuer ?`,
+        );
+        if (!confirmer) return;
+      }
+
+      if (!isServerReachable.value) {
+        const confirmer = confirm("⚠️ Vous êtes hors ligne...");
+        if (!confirmer) return;
+      }
+
       stopSessionTimer();
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      clearAllLocalData(); // purge du cache local
+      clearCacheKey();
       this.$router.push("/login");
     },
 

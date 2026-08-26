@@ -445,8 +445,13 @@
             </div>
 
             <form
-              v-else
-              @submit.prevent="editingEntry ? updateEntry() : addEntry()"
+              @submit.prevent="
+                modifyingSubmissionId
+                  ? confirmerModificationEtValidation()
+                  : editingEntry
+                    ? updateEntry()
+                    : addEntry()
+              "
               class="space-y-4"
             >
               <!-- Discipline -->
@@ -868,18 +873,8 @@
               </div>
             </div>
 
-            <div v-if="rejetEnCours === entry.id" class="mb-3">
-              <textarea
-                v-model="commentaireRejet"
-                rows="2"
-                placeholder="Motif du rejet (obligatoire)..."
-                class="w-full border border-red-300 rounded-lg p-2 text-sm"
-              ></textarea>
-            </div>
-
             <div class="flex gap-2">
               <button
-                v-if="rejetEnCours !== entry.id"
                 @click="validerEntree(entry.id)"
                 :disabled="processingId === entry.id"
                 class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
@@ -887,32 +882,11 @@
                 Valider
               </button>
               <button
-                v-if="rejetEnCours !== entry.id"
-                @click="rejetEnCours = entry.id"
-                class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-200"
+                @click="openModifierEntree(entry)"
+                class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-200"
               >
-                ❌ Rejeter
+                Modifier
               </button>
-              <template v-else>
-                <button
-                  @click="confirmerRejet(entry.id)"
-                  :disabled="
-                    processingId === entry.id || !commentaireRejet.trim()
-                  "
-                  class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-                >
-                  Confirmer le rejet
-                </button>
-                <button
-                  @click="
-                    rejetEnCours = null;
-                    commentaireRejet = '';
-                  "
-                  class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300"
-                >
-                  Annuler
-                </button>
-              </template>
             </div>
           </div>
         </div>
@@ -1900,6 +1874,9 @@ import {
 
 import { isServerReachable, onReconnect } from "../utils/connectivity";
 
+import { clearAllLocalData } from "../db/syncService";
+import { clearCacheKey } from '../utils/cacheCrypto';
+
 import { startSessionTimer, stopSessionTimer } from "../utils/session";
 
 import SidebarItem from "./SidebarItem.vue";
@@ -1989,8 +1966,7 @@ export default {
 
       entreesEnAttente: [],
       loadingEnAttente: false,
-      rejetEnCours: null,
-      commentaireRejet: "",
+      modifyingSubmissionId: null,
       processingId: null,
 
       mesEntreesSelectedClassId: null,
@@ -2465,6 +2441,73 @@ export default {
       this.editingEntry = false;
     },
 
+    async openModifierEntree(entry) {
+      this.newEntry = {
+        id: entry.id,
+        disciplineId: entry.discipline_id,
+        saNumber: entry.sa_number,
+        saName: entry.sa_name,
+        contenu: entry.contenu,
+        heureDebut: entry.heure_debut,
+        heureFin: entry.heure_fin,
+        dateCours: entry.date_cours,
+        trimestre: entry.trimestre,
+        mois: entry.mois,
+        semaineNumero: entry.semaine_numero,
+      };
+      this.activitesStatus = entry.activites_status || {};
+      this.selectedClassId =
+        entry.discipline?.Classe?.id || this.selectedClassId;
+
+      await this.loadActivitesFromProgramme();
+
+      if (entry.activites) {
+        const existing = entry.activites.split("\n").map((a) => a.trim());
+        this.selectedActivites = this.availableActivites.filter((a) =>
+          existing.includes(a),
+        );
+        const notFound = existing.filter(
+          (a) => !this.availableActivites.includes(a),
+        );
+        if (notFound.length) this.manualActivites = notFound.join("\n");
+      }
+
+      if (this.editor) this.editor.commands.setContent(this.newEntry.contenu);
+
+      this.modifyingSubmissionId = entry.id;
+      this.editingEntry = false; // pas le même flux que "modifier ses propres entrées"
+      this.showForm = true;
+      this.activeSection = "a-valider"; // reste sur la même section
+    },
+
+    async confirmerModificationEtValidation() {
+      try {
+        const entryData = {
+          sa_number: this.newEntry.saNumber,
+          sa_name: this.newEntry.saName,
+          activites: this.finalActivites,
+          activites_status: this.activitesStatus,
+          contenu: this.newEntry.contenu,
+          date_cours: this.newEntry.dateCours,
+          heure_debut: this.newEntry.heureDebut,
+          heure_fin: this.newEntry.heureFin,
+          trimestre: this.newEntry.trimestre,
+          mois: this.newEntry.mois,
+          semaine_numero: this.newEntry.semaineNumero,
+        };
+        await api.patch(
+          `/cahier/cahier-entries/${this.modifyingSubmissionId}/modifier-et-valider`,
+          entryData,
+        );
+        alert("Entrée modifiée et validée avec succès !");
+        this.modifyingSubmissionId = null;
+        this.resetEntryForm();
+        this.showForm = false;
+        await this.fetchEntreesEnAttente();
+      } catch (error) {
+        alert("Erreur : " + (error.response?.data?.error || error.message));
+      }
+    },
     stripHtml(html) {
       if (!html) return "";
       return html.replace(/<[^>]*>/g, "");
@@ -2719,9 +2762,22 @@ export default {
       }
     },
     logout() {
+      if (this.pendingCount > 0) {
+        const confirmer = confirm(
+          `⚠️ ${this.pendingCount} entrée(s) en attente de synchronisation. Se déconnecter maintenant les supprimera définitivement. Continuer ?`,
+        );
+        if (!confirmer) return;
+      }
+      if (!isServerReachable.value) {
+        const confirmer = confirm("⚠️ Vous êtes hors ligne...");
+        if (!confirmer) return;
+      }
+
       stopSessionTimer();
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      clearAllLocalData(); // purge le cache local à la déconnexion
+      clearCacheKey(); // Supprime la clé de chiffrement du cache
       this.$router.push("/login");
     },
     formatDate(date) {
@@ -2926,6 +2982,7 @@ export default {
       this.resetEntryForm();
       this.editingEntry = false;
       this.showForm = false;
+      this.modifyingSubmissionId = null;
     },
     async showHistory(entryId) {
       try {
