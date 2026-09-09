@@ -354,9 +354,9 @@ export default {
       return new Date(date).toLocaleDateString("fr-FR");
     },
     logout() {
-      if (this.pendingCount.value > 0) {
+      if (pendingCount.value > 0) {
         const confirmer = confirm(
-          `⚠️ ${this.pendingCount.value} entrée(s) en attente de synchronisation. Se déconnecter maintenant les supprimera définitivement. Continuer ?`,
+          `⚠️ ${pendingCount.value} entrée(s) en attente de synchronisation. Se déconnecter maintenant les supprimera définitivement. Continuer ?`,
         );
         if (!confirmer) return;
       }
