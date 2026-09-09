@@ -1872,10 +1872,14 @@ import {
   getPendingEntries,
 } from "../db/syncService";
 
-import { isServerReachable, pendingCount, onReconnect } from "../utils/connectivity";
+import {
+  isServerReachable,
+  pendingCount,
+  onReconnect,
+} from "../utils/connectivity";
 
 import { clearAllLocalData } from "../db/syncService";
-import { clearCacheKey } from '../utils/cacheCrypto';
+import { clearCacheKey } from "../utils/cacheCrypto";
 
 import { startSessionTimer, stopSessionTimer } from "../utils/session";
 
@@ -2762,9 +2766,9 @@ export default {
       }
     },
     logout() {
-      if (this.pendingCount > 0) {
+      if (this.pendingCount.value > 0) {
         const confirmer = confirm(
-          `⚠️ ${this.pendingCount} entrée(s) en attente de synchronisation. Se déconnecter maintenant les supprimera définitivement. Continuer ?`,
+          `⚠️ ${this.pendingCount.value} entrée(s) en attente de synchronisation. Se déconnecter maintenant les supprimera définitivement. Continuer ?`,
         );
         if (!confirmer) return;
       }

@@ -39,6 +39,11 @@ app.use(
 
 app.use(express.json());
 
+app.use((req, res, next) => {
+  console.log("IP détectée pour rate-limit:", req.ip);
+  next();
+});
+
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 150,
@@ -49,6 +54,12 @@ const globalLimiter = rateLimit({
       "Trop de requêtes sur l'ensemble de l'application. Ralentissez un peu.",
   },
 });
+
+app.use((req, res, next) => {
+  console.log("IP détectée pour rate-limit:", req.ip);
+  next();
+});
+
 app.use(globalLimiter);
 
 app.use((req, res, next) => {
