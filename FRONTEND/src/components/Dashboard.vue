@@ -3369,9 +3369,10 @@ export default {
     },
 
     logout() {
-      if (this.pendingCount > 0) {
+      if (this.pendingCount.value > 0) {
+        //accès direct à la variable importée, avec .value
         const confirmer = confirm(
-          `⚠️ ${this.pendingCount} entrée(s) en attente de synchronisation. Se déconnecter maintenant les supprimera définitivement. Continuer ?`,
+          `⚠️ ${this.pendingCount.value} entrée(s) en attente de synchronisation. Se déconnecter maintenant les supprimera définitivement. Continuer ?`,
         );
         if (!confirmer) return;
       }
