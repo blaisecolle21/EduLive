@@ -2818,7 +2818,11 @@ import {
 } from "../db/syncService";
 
 import SidebarItem from "./SidebarItem.vue";
-import { onReconnect } from "../utils/connectivity";
+import {
+  isServerReachable,
+  pendingCount,
+  onReconnect,
+} from "../utils/connectivity";
 
 import { clearAllLocalData } from "../db/syncService";
 import { clearCacheKey } from "../utils/cacheCrypto";

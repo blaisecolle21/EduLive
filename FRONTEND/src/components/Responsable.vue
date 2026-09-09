@@ -231,7 +231,11 @@ import api from "../api";
 import QRCode from "qrcode";
 import CahierEntryForm from "./CahierEntryForm.vue";
 import SidebarItem from "./SidebarItem.vue";
-import { onReconnect } from "../utils/connectivity";
+import {
+  onReconnect,
+  isServerReachable,
+  pendingCount,
+} from "../utils/connectivity";
 import { clearAllLocalData } from "../db/syncService";
 import { clearCacheKey } from "../utils/cacheCrypto";
 import { startSessionTimer, stopSessionTimer } from "../utils/session";

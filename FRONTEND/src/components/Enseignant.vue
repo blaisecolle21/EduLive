@@ -1872,7 +1872,7 @@ import {
   getPendingEntries,
 } from "../db/syncService";
 
-import { isServerReachable, onReconnect } from "../utils/connectivity";
+import { isServerReachable, pendingCount, onReconnect } from "../utils/connectivity";
 
 import { clearAllLocalData } from "../db/syncService";
 import { clearCacheKey } from '../utils/cacheCrypto';
