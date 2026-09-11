@@ -5,6 +5,32 @@ const checkPermission = require("../middleware/checkPermission");
 const { models } = require("../config/database");
 const { Op } = require("sequelize");
 const progressionAnalyzer = require("../services/progressionAnalyzer");
+const sanitizeHtml = require("sanitize-html");
+
+function sanitizeContenu(html) {
+  if (!html) return html;
+  return sanitizeHtml(html, {
+    allowedTags: [
+      "p",
+      "br",
+      "strong",
+      "em",
+      "u",
+      "s",
+      "ul",
+      "ol",
+      "li",
+      "h1",
+      "h2",
+      "h3",
+      "blockquote",
+      "a",
+    ],
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+    },
+  });
+}
 
 // ============================================================
 // 1. LISTER TOUTES LES CLASSES (ADMIN & ENSEIGNANT)
@@ -713,7 +739,7 @@ router.post(
         sa_name,
         activites,
         activites_status,
-        contenu,
+        contenu: sanitizeContenu(contenu),
         date_cours,
         heure_debut,
         heure_fin,
@@ -909,7 +935,7 @@ router.put(
         sa_name: req.body.sa_name,
         activites: req.body.activites,
         activites_status: req.body.activites_status,
-        contenu: req.body.contenu,
+        contenu: sanitizeContenu(req.body.contenu),
         date_cours: req.body.date_cours,
         heure_debut: req.body.heure_debut,
         heure_fin: req.body.heure_fin,
