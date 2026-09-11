@@ -2481,7 +2481,7 @@ export default {
       this.modifyingSubmissionId = entry.id;
       this.editingEntry = false; // pas le même flux que "modifier ses propres entrées"
       this.showForm = true;
-      this.activeSection = "a-valider"; // reste sur la même section
+      this.activeSection = "mes-classes"; // reste sur la même section
     },
 
     async confirmerModificationEtValidation() {
@@ -2715,7 +2715,7 @@ export default {
         this.processingId = null;
       }
     },
-    async confirmerRejet(id) {
+    /* async confirmerRejet(id) {
       if (!this.commentaireRejet.trim()) return;
       this.processingId = id;
       try {
@@ -2734,7 +2734,7 @@ export default {
       } finally {
         this.processingId = null;
       }
-    },
+    },*/
     /**
      * Réinitialiser le formulaire
      */
