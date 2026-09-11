@@ -10,7 +10,7 @@ const { sequelize } = require("./src/config/database");
 const port = process.env.PORT || 6300; //  dynamique pour Railway
 const app = express();
 
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 
 app.use(helmet());
 
