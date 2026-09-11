@@ -2481,7 +2481,8 @@ export default {
       this.modifyingSubmissionId = entry.id;
       this.editingEntry = false; // pas le même flux que "modifier ses propres entrées"
       this.showForm = true;
-      this.activeSection = "mes-classes"; // reste sur la même section
+      this.activeSection = "mes-classes"; // aller dans l'autre section
+      console.log("🔎 activeSection après assignation:", this.activeSection); // bug temporaire
     },
 
     async confirmerModificationEtValidation() {
